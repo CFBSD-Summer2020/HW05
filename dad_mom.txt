@@ -1,0 +1,4 @@
+fam_id	name_dad	income_dad	name_mom	income_mom
+1	Bill	30000	Bess	15000
+2	Art	22000	Amy	22000
+3	Paul	25000	Pat	50000
