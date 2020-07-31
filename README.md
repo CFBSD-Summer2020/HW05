@@ -22,6 +22,8 @@ That is all to say, it would be much easier if those files were all together ins
 
 Then once those files are all together, you should have no problem answering the following questions (with graphs):
 
-Which cancer type has the lowest AUC values to the compound "vorinostat"?
-Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
-For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+* Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+* Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+* For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
