@@ -1,0 +1,75 @@
+---
+title: "HW05 Part A"
+author: "Patrick Haller"
+date: "7/31/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HW05 Part A
+
+**For this part of HW05, my goal is to tidy the dad_mom.txt file. First, I want to load the tidyverse package and read in the data from the dad_mom.txt file:**
+
+```{r load tidyverse package}
+library(tidyverse)
+```
+
+
+```{r read in txt file}
+
+# read in data using read.table() function
+dad_mom <- read.table("dad_mom.txt", header = TRUE)
+
+```
+
+**Here, you can see the initial format of the data:**
+
+```{r show old table}
+
+# use the kable() function to show the data in a nice table format
+knitr::kable(dad_mom, format = "markdown", align = 'c')
+
+```
+
+
+**My goal is to make a tidy dataframe with 4 columns that are named "Family", "Parent", "Name", "Income".**  
+
+
+```{r}
+
+# create new data frame
+dad_mom_tidy <- dad_mom %>% 
+  # unite name and income columns for dad and mom
+  unite(Dad, name_dad, income_dad) %>%   
+  unite(Mom, name_mom, income_mom) %>%
+  # gather the united columns
+  pivot_longer(c('Dad', 'Mom'), names_to = "Parent", values_to = "Income") %>%
+  # separate the previously united columns
+  separate(col = "Income", into = c('Name', 'Income')) 
+
+# adjust column name for family ID
+colnames(dad_mom_tidy)[1] <- "Family"
+# set the income as integers
+dad_mom_tidy$Income <- as.integer(dad_mom_tidy$Income)
+
+
+  
+```
+
+
+**Here, you can see what my tidy version of the data frame looks like:**
+
+```{r show new table}
+
+knitr::kable(dad_mom_tidy, format = "markdown", align = 'c')
+
+```
+
+
+
+
+
+
