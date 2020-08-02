@@ -12,7 +12,12 @@ Tidy this data frame so that it adheres to the tidy data principles:
 
     Each variable must have its own column.
     Each observation must have its own row.
-    Each value must have its own cell.
+    Each value must have its own cell.  
+    
+    
+    
+**Here is the link to my [code](HW05_part_A.Rmd) and [markdown](HW05_part_A.md) for the first part of HW05.**
+
 
 ## 2. Joining together CTRP data
 
@@ -26,4 +31,9 @@ Then once those files are all together, you should have no problem answering the
 
 * Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
 
-* For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+* For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?  
+
+
+
+
+**Here is the link to my [code](HW05_part_B.Rmd) and [markdown](HW05_part_B.md) for the second part of HW05.**
