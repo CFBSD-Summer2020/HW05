@@ -1,0 +1,43 @@
+---
+title: "HW 05_Tokamov"
+author: "Sherzod Tokamov"
+date: "8/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+dad_mom <- read.delim("dad_mom.txt")
+tidy_dad_mom <- dad_mom %>%
+  gather(key = "key", value = "value", 2:5) %>%
+  separate(key, into = c("name", "parent")) %>%
+  spread(name, value) %>%
+  ggplot(aes(x = parent, y = income, fill = parent)) +
+  geom_col() +
+  facet_wrap(~fam_id) +
+  labs(x = "Parent", y = "Ammount per year in USD", title = "Who's the breadwinner?") +
+  theme(legend.position = "none")
+tidy_dad_mom
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

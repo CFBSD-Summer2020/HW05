@@ -14,6 +14,7 @@ Tidy this data frame so that it adheres to the tidy data principles:
     Each observation must have its own row.
     Each value must have its own cell.
 
+
 ## 2. Joining together CTRP data
 
 CTRP is a dataset I use in my research. CTRP screens cancer cells with various compounds and determines the Area Under the Dose Response Curve (AUC, a metric for how sensitive a cell line is to that compound). However, when you download the data, it comes in parts that requires a lot of id matching to be able to use reasonably easily. For example, the file that contains the AUC data doesn't tell you the cell line name or the type of cancer it is, it just gives an experiment ID number. If you wanted to know which cell line was which, you'd have to reference the experiment_info.csv file which gives you a cell line ID for each experiment, and then reference the the cancer_cell_line_file.csv to figure out what the name of that cell line actually is. 
