@@ -1,0 +1,114 @@
+---
+title: "hw05"
+author: "Maria Evers"
+date: "8/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+
+##Homework 5 part 1:
+```{r}
+
+library(tidyverse)
+library(readr)
+library(knitr)
+library(stringr)
+library(dplyr)
+
+#loading in the data 
+
+dad_mom <- read_delim("dad_mom.txt", delim = "\t")
+
+#tidying the data 
+
+dad_mom_tidy1 <- dad_mom %>%
+  
+#tidying columns 
+  
+  gather(key = "parent", value = "name_parent", name_dad, name_mom) %>%
+  
+#renaming mom and dad 
+  
+  mutate(parent = recode(parent, 'name_dad' = "dad", 'name_mom' = "mom")) %>%
+  
+#pairing the income with the correct name 
+  
+  mutate(income = ifelse(parent == "dad", income_dad, income_mom)) %>%
+
+#since we previously used the mutate(ifelse) function to assort the income to each person, we can get rid of income_mom and income_dad for each family ID because this is redundant.   
+  
+  select(-income_mom, -income_dad) 
+
+    
+
+```
+
+##Homework 5 part 2:
+```{r}
+
+
+library(ggplot2)
+
+
+#Reading in CTRP files from CTRP Folder as CSV files 
+
+AUC_1 <- read.csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read.csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read.csv("CTRP_files/compound_info.csv")
+experiment_info <- read.csv("CTRP_files/experiment_info.csv")
+
+#Combine data- start by binding AUC1 and AUC2 since they have the exact same columns. Then, combine the rest by their common columns one by one using inner_join
+
+CTRP_data <- AUC_1 %>%
+  bind_rows(AUC_2) %>%
+  inner_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+  inner_join(cancer_cell_line_info, by = "master_ccl_id") %>%
+  inner_join(compound_info, by = "master_cpd_id")
+
+#Answering the questions
+
+#1. Which cancer type has the lowest AUC values to the compound "vorinostat"?
+vorinostat <- CTRP_data %>%
+  select(area_under_curve, cancer_type, cpd_name) %>%
+  filter(cpd_name == "vorinostat") %>%
+  filter(cancer_type != "NA") %>%
+  group_by(cancer_type)
+
+ggplot(vorinostat, aes(x = reorder(cancer_type, area_under_curve), y = area_under_curve)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 75, hjust = 1))
+ 
+#haematopoietic and lyphoid tissue has the lowest AUC values to vorinostat, as shown by the plot.
+
+#2. Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+lowest_prostate_auc <- CTRP_data %>%
+  select(area_under_curve, ccl_name, cpd_name) %>%
+  filter(ccl_name == "22RV1")
+
+#At this point, I am getting an error that there is no data in my "lowest_proptate_auc", maybe this data was excluded from the dataset when I previously used the inner_join function??? After filtering out this cell line, I would have arracnged the AUC from low to highest values to find the compound that this cell line is most sensitive to. These could be plotted similarly as to question 1. 
+
+#3. For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+target_EGFR <- CTRP_data %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR") & cancer_type == "breast") %>%
+  group_by(cpd_name) %>%
+  summarize(CTRP_data = mean(area_under_curve)) %>%
+  arrange(CTRP_data)
+
+#From the output table target_EGFR, you can see that afatinib has the lowest avg AUC values in BC cell lines. To Graph: 
+
+ggplot(target_EGFR, mapping = aes(x = reorder(cpd_name, CTRP_data), y = CTRP_data)) +
+  geom_col()+
+  theme(axis.text.x = element_text(angle = 75, hjust = 1))
+
+```
