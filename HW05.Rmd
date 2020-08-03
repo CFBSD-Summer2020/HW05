@@ -16,37 +16,39 @@ library(tidyverse)
 Untidied version of the dad_mom data frame:
 
 
-```{r}
+```{r, echo = FALSE}
 dad_mom_messy <- read_tsv("dad_mom.txt")
 
 kable(dad_mom_messy, format = "markdown")
 ```
 
-Tidied version of the dad_mom data frame:
+Besides **fam_id**, **name**, and **income**, dad_mom.txt includes a fourth variable: whether the parent is the dad or the mom, which I'll simply call **parent**. Therefore, we need to  reshape the table to have the names and income in a single column and create a new variable that specifies if the parent is mom or dad. 
+
+Here's the tidied version of the dad_mom data frame:
 
 ```{r}
 
-#Ok, this one can be confusing. The objective is to have 4 variables: fam_id, name, parent, income
+#Ok, this one can be confusing, even for me, I'll try to explain it as best as I can. 
 
 dad_mom_tidy <- dad_mom_messy %>%
-  #First we need to create the parent variable which considers if its the mom or the dad
+  #Since the parent variable only exist in the column names (i. e. *_mom, *_dad), I created new columns that specify if the parent is mom or dad.
   separate(col = name_dad, into = c("name_dad", "parent_dad")) %>%
-  separate(col = name_mom, into = c("name_mom", "parent_mom")) %>%
+  separate(col = name_mom, into = c("name_mom", "parent_mom")) %>% #parent_mom/parent_dad will be empty columns
   replace_na(list(parent_dad = "dad",
-                  parent_mom = "mom")) %>%
+                  parent_mom = "mom")) %>% #I filled the empty columns with the proper value (dad/mom)
   
-  #For the moment, I joined the name and parent variables into one
+  #For now, I joined the name and parent variables into one to manipulate them later easily
   unite(name_dad, parent_dad, col = "name_dad", sep = "_") %>%
   unite(name_mom, parent_mom, col = "name_mom", sep = "_") %>%
   
-  #Now we need to spread the combined name variables to gain columns with the parents names
+  #Since I need all the names in a single column, I spread them first as variables, with the income as observations. This creates a data frame with a lot of NA values
   spread(key = name_dad, value = income_dad) %>%
   spread(key = name_mom, value = income_mom) %>%
   
-  #We gather everything, eliminating NAs, to get a single column
+  #Now that the parents names are read as variables, I only need to gather them into a single key column, with incomes as the value column. I also eliminated the NA values in the income.
   gather(key = "name", value = "income", -fam_id, na.rm = TRUE) %>%
   
-  #Finally, we separate name and parent variables to finish
+  #Finally, we separate name and parent variables (remember they were united) to get the last variable, parent, into a single column
   separate(col = name, into = c("name", "parent")) %>%
   arrange(fam_id)
   
@@ -75,18 +77,16 @@ experiment_info <- read_csv("CTRP_files/experiment_info.csv")
 
 ```{r}
 
-#Bind the AUC files to get a master file
+#Bind the AUC files to get a single file
 AUC_total <- AUC_1 %>%
   bind_rows(AUC_2)
 
-glimpse(AUC_total)
-
+#Let's join with the remaining data frames
 CTRP_df <- AUC_total %>%
   inner_join(experiment_info, by = c("experiment_id" = "master_ccl_id")) %>%
   inner_join(cancer_cell_line_info, by = c("experiment_id" = "master_ccl_id")) %>%
   inner_join(compound_info, by = "master_cpd_id") %>%
-  drop_na(gene_symbol_of_protein_target) %>%
-  separate_rows(gene_symbol_of_protein_target, sep = ";")
+  separate_rows(gene_symbol_of_protein_target, sep = ";") #Tidy up that variable
 
 
 glimpse(CTRP_df)
@@ -109,14 +109,23 @@ CTRP_df_q1 <- CTRP_df %>%
   filter(cpd_name == "vorinostat") %>%
   group_by(cancer_type) %>%
   summarize(AUC = mean(area_under_curve)) %>%
+  drop_na(cancer_type) %>% #There is a NA cancer type, it's not the lowest value, so I eliminated it.
   arrange(AUC)
 
-CTRP_df_q1
-
-ggplot(CTRP_df_q1, aes(cancer_type, AUC)) +
-  geom_col() +
-  coord_flip()
+ggplot(CTRP_df_q1, aes(fct_inorder(cancer_type), AUC)) +
+  geom_col(fill = "turquoise4") +
+  labs(title = "Susceptibility of cancer types to vorinostat",
+       y = "Mean area under the dose response curve",
+       x = "Cancer type",
+       caption = "Source: Gruener, R. (2020)") +
+  theme(legend.position = "none")+
+  coord_flip() #flipping x and y-axes helps with the very long names of cancer types
   
+```
+
+
+```{r, echo = FALSE}
+print(paste(CTRP_df_q1$cancer_type[1], "cancer has the lowest AUC value to vorinostat"))
 ```
 
 
@@ -130,13 +139,23 @@ CTRP_df_q2 <- CTRP_df %>%
   filter(cancer_type == "prostate", ccl_name == "22RV1") %>%
   group_by(cpd_name) %>%
   summarize(AUC = mean(area_under_curve)) %>%
-  arrange(AUC)
+  arrange(AUC) %>%
+  top_n(-10, AUC) #I cheat a little bit in here. Because there are so many compounds that interact with 22RV1 that in the graph it becomes difficult to read the labels, I decided to narrow the number of compounds to the top (or "bottom" in this case, hence the negative number) 10 with the lowest AUC. 
 
-
-CTRP_df_q2
+ggplot(CTRP_df_q2, aes(fct_inorder(cpd_name), y = AUC)) +
+  geom_col(fill = "deeppink2") +
+  labs(title = "Prostate cancer cell line 22RV1 susceptibility to \ndifferent cancer drugs",
+       x = "Drug name",
+       y = "Mean area under the dose response curve",
+       caption = "Source: Gruener, R. (2020)") +
+  coord_flip() #same reason as before
 
 ```
 
+```{r, echo = FALSE}
+print(paste("Prostate cancer cell line 22RV1 is the most sensitve to", CTRP_df_q2$cpd_name[1]))
+
+```
 
 
 * For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
@@ -150,10 +169,23 @@ CTRP_df_q3 <- CTRP_df %>%
   summarize(AUC = mean(area_under_curve)) %>%
   arrange(AUC)
 
-CTRP_df_q3
+cpd_labels <- c("Afatinib", "Neratinib", "Gefatinib", "WZ8040", "Canertinib", "Erlotinib:PLX-4032", "Vandetanib", "Erlotinib", "Lapatinib", "WZ4002", "PD 153035") #Simplified compound names
+
+ggplot(CTRP_df_q3, aes(fct_inorder(cpd_name), AUC)) +
+  geom_col(fill = "forestgreen") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Compounds that target the EGFR gene in breast cancer cell lines",
+       x = "Drug name",
+       y = "Mean area under the dose response curve",
+       caption = "Source: Gruener, R. (2020)") +
+  scale_x_discrete(labels = cpd_labels)
 
 ```
 
+```{r, echo = FALSE}
+print(paste("On average,", CTRP_df_q3$cpd_name[1], "has the lowest AUC value in the breast cancer cell lines"))
+
+```
 
 
 ## Session info
