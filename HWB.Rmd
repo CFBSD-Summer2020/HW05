@@ -1,0 +1,144 @@
+---
+title: "HW5B_Angela_Chun"
+author: "Angela Chun"
+date: "8/3/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(stringr)
+```
+
+
+# Load the data
+```{r load data}
+AUC_1 <- read.csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read.csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read.csv("CTRP_files/compound_info.csv")
+experiment_info <- read.csv("CTRP_files/Experiment_info.csv")
+```
+
+
+# Join the data 
+```{r joined data}
+#joining all the data into one data frame
+Joined_CTRP_data <- AUC_1 %>%
+  bind_rows(AUC_2) %>%
+  inner_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+  inner_join(cancer_cell_line_info, by = "master_ccl_id")%>%
+  inner_join(compound_info, by = "master_cpd_id") 
+
+```
+
+
+
+
+# Answering Questions
+
+
+### Q1) Which cancer type has the lowest AUC values to the compound "vorinostat"?
+```{r Q1}
+
+#finding the cancer_type with lowest mean AUC
+CTRP_VOR <- Joined_CTRP_data %>%
+  filter(cpd_name == "vorinostat") %>%
+  group_by(cancer_type) %>%
+  summarize(AUC = mean(area_under_curve)) %>%
+  arrange(AUC)
+  
+#visualizing the data 
+CTRP_VOR
+
+#Answer = haematopoietic_and_lymphoid_tissue
+
+```
+
+
+## Q1) Graph
+```{r Q1 Graph}
+
+# creating a bar graph for the average AUC of each cancer type
+ggplot(CTRP_VOR, aes(x = reorder(cancer_type, AUC), y = AUC)) + geom_col(fill = "lightslateblue") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Cancer type") +
+  ylab("Average AUC")
+
+
+```
+
+
+
+
+## Q2) Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+```{r Q2}
+
+CTRP_prostate <- Joined_CTRP_data %>%
+  filter(cancer_type == "prostate") %>%
+  group_by(cpd_name) %>%
+  summarize(AUC = mean(area_under_curve)) %>%
+  arrange(AUC)
+
+#filtering for ccl_name == "22RV1" yielded no results, so instead I just filtered for the prostate cancer type and found the compound with lowest AUC. Note that this isn't really related to a specific cell line, but didn't know what else to do.
+
+#visualizing CTRP_prostate data frame
+graph_prostate <- head(CTRP_prostate)
+
+
+#Answer = *Auobain
+
+```
+
+
+## Q2) Graph
+```{r Q2 Graph}
+
+#Graph of top 6 rows of CTRP_prostate
+ggplot(graph_prostate, aes(x = reorder(cpd_name,AUC), AUC, fill = cpd_name)) + 
+  geom_col() +
+  xlab("Compound name") +
+  ylab("Average AUC") +
+  theme(legend.position = "none")
+
+```
+
+
+
+
+
+## Q3) For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+```{r Q3}
+CTRP_EGFR <- Joined_CTRP_data %>%
+  select(cancer_type, gene_symbol_of_protein_target, area_under_curve, cpd_name) %>%
+  filter(cancer_type == "breast") %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR"))%>%
+  group_by(cpd_name, gene_symbol_of_protein_target) %>%
+  summarize(AUC = mean(area_under_curve)) %>%
+  arrange(AUC)
+
+
+CTRP_EGFR
+
+#Answer = afatinib
+```
+
+
+## Q3) Graph
+```{r Q3 Graph}
+ggplot(CTRP_EGFR, aes(x = reorder(cpd_name, AUC), y = AUC, fill = cpd_name)) +
+  geom_col() +
+  xlab("Compound name")+
+  ylab("Average AUC") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+    
+
+```
+
+
+
+
