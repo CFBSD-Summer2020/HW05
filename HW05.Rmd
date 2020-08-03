@@ -1,0 +1,145 @@
+---
+title: "HW05: mom_dad and CTRP data"
+author: "Laura N. Cespedes Arias"
+date: "31/7/2020"
+output: github_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages and importing data
+```{r packages, message=FALSE, warning=FALSE}
+library(tidyverse)    
+library(knitr)
+```
+
+# 1) The mom_dad data 
+
+## Importing the data
+```{r include=TRUE}
+# read in the data
+dad_mom <- read.table("dad_mom.txt",h=T)
+
+#These is how the table looked originally:
+knitr::kable(dad_mom)
+```
+
+## Tidying the dad_mom file
+
+Pretty sure there is a shorter and cleaner way to do this, but this is was the best solution I could think of:
+
+First, I used pivot_longer to reduce the number of columns (now each mom and dad per family have their own row). I created a column named "parent" where I specified if the person was a mom or a dad. Then I replaced the values of these variable (using mutate & replace). After that, I created a new column called "income" which has the value for the income of the corresponding parent (extracting values from income_dad and income_mom depending of the "parent" column) For this I used mutate & if_else. Lastly, I eliminated the income_dad and income_mom columns.
+
+```{r include=TRUE}
+ dad_mom_v2 <-
+  dad_mom %>% pivot_longer(c(name_dad, name_mom),
+                           names_to = "parent",
+                           values_to = "name") %>% mutate(parent = replace(parent, parent == "name_mom", "mom")) %>% mutate(parent = replace(parent, parent == "name_dad", "dad")) %>% mutate(income = if_else(parent == "mom", income_mom, income_dad)) %>% select(-c(income_dad, income_mom))
+
+#This is how the table looks after tidying!
+knitr::kable(dad_mom_v2)
+```
+
+# 1) The CTRP data
+
+## Importing the data
+
+```{r include=TRUE}
+# I tried to get all files automatically using apply but I failed to change the working directory within the project :/. So I ended up doing it manually:
+AUC_1 <- read.csv("./CTRP_files/AUC_1.csv",h=T)
+AUC_2 <- read.csv("./CTRP_files/AUC_2.csv",h=T)
+Experiment_info <- read.csv("./CTRP_files/Experiment_info.csv",h=T)
+cancer_cell_line_info <- read.csv("./CTRP_files/cancer_cell_line_info.csv",h=T)
+compound_info <- read.csv("./CTRP_files/compound_info.csv",h=T)
+```
+
+## Joining together CTRP data
+
+First, I combined the AUC tables (which have the same columns, so I used bind_rows).
+
+```{r include=TRUE}
+AUC <- bind_rows(AUC_1,AUC_2)
+knitr::kable(head(AUC))
+```
+
+Then, I merged the AUC data with the other data frames.
+
+```{r include=TRUE}
+
+#First I changed the column name of the experiment ID in the "AUC" table so it matched the one from the "Experiment_info" table.
+AUC_2 <- AUC %>% rename(expt_id=experiment_id) 
+
+#Then I merged the data tables based on the common column (I did this subsequently starting from AUC + Experimenta_info, which had in common the column (i.e. variable) "expt_id")
+AUC_experiment <- full_join(AUC_2,Experiment_info,by = "expt_id")
+AUC_experiment_cancer <- full_join(AUC_experiment,cancer_cell_line_info,by = "master_ccl_id")
+AUC_experiment_cancer_compound <- full_join(AUC_experiment_cancer,compound_info,by = "master_cpd_id")
+
+#Just to check the final table column names
+colnames(AUC_experiment_cancer_compound)
+
+#Exported the new data frame, just in case.
+write.csv(AUC_experiment_cancer_compound,"CTRP_data_all.csv")
+```
+
+## Answers to questions
+
+### Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+Based on the figure **hematopoietic and lymphoid tissue cancer** has the lowest AUC values on average. However, the lowest AUC value correspond to **upper aerodigestive tract cancer**.
+
+```{r include=TRUE}
+#First I filtered the complete date set to include only the observations involving the compound "vorinostat"
+vorinostat_data <- AUC_experiment_cancer_compound %>% filter(cpd_name=="vorinostat")
+
+#Then, I built a boxplot to visualize the difference in AUC among cancer types:
+ggplot(vorinostat_data,mapping = aes(x = cancer_type, y= area_under_curve)) +
+  geom_jitter(col="steelblue4",size=0.8)+
+  geom_boxplot(fill="steelblue4",alpha=0.6,outlier.colour = NA)+
+  theme_bw()+
+  theme(axis.title = element_text(color="black", size=12))+
+  xlab("Cancer type") +
+  ylab("Area under curve (AUC)")+
+  theme(axis.text.x = element_text(color="black", size=8, angle=45,hjust=1))
+```
+
+### Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+**leptomycin B** is the compound to which the prostate cancer cell line 22RV1 is most sensitive to.
+```{r include=TRUE}
+#First I filtered the complete date set to include only the observations involving prostate cancer cell line "22RV1"
+line22RV1_data <- AUC_experiment_cancer_compound %>% filter(ccl_name=="22RV1") %>% filter(cancer_type=="prostate")
+
+#top_n works to select only the top values for a variable in a data frame (and - is used to select the minimum value instead)
+(top_n(line22RV1_data,-1,area_under_curve))$cpd_name
+
+```
+
+### For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+The coumpound with lowest AUC values in average is **afatinib**. However, I identified 11 compounds that target EGFR, not 10.
+
+```{r include=TRUE}
+#First I filtered the complete date set to have one including only compounds that target EGFR 
+#Because there can be multiple values in the "gene_symbol_of_protein_target" (separated by ;), I used "grep" instead of "=="
+#I also filtered to only include breast cancer data.
+EGFR_data <- AUC_experiment_cancer_compound %>% filter(grepl("EGFR",gene_symbol_of_protein_target)) %>%filter(cancer_type=="breast")
+
+#Then, I built a boxplot to visualize the difference in AUC among compounds:
+ggplot(EGFR_data,mapping = aes(x = cpd_name, y= area_under_curve)) +
+  geom_jitter(col="seagreen4",size=2)+
+  geom_boxplot(fill="seagreen4",alpha=0.6,outlier.colour = NA)+
+  theme_bw()+
+  theme(axis.title = element_text(color="black", size=12))+
+  xlab("Compound name") +
+  ylab("Area under curve (AUC)")+
+  theme(axis.text.x = element_text(color="black", size=8, angle=45,hjust=1))
+```
+
+## Session info
+```{r}
+# always good to have this for reproducibility purposes
+devtools::session_info()
+```
+

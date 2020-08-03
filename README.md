@@ -27,3 +27,8 @@ Then once those files are all together, you should have no problem answering the
 * Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
 
 * For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+### For reviewing
+Code is [here](https://github.com/lcespedesarias/HW05/blob/master/HW05.Rmd)
+Markdown is [here](https://github.com/lcespedesarias/HW05/blob/master/HW05.md)
+
