@@ -1,0 +1,52 @@
+---
+title: "HW05 Part 1"
+author: "Olivia Pura"
+date: "8/3/2020"
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HW05 Part 1
+
+In Part 1 of HW05, we're tidying up the dad_mom.txt dataset. To do this, we have to load the tidyverse package. I'm also loading in the knitr package to utilize the kable() function.
+
+```{r packages, message=FALSE}
+library(tidyverse)
+library(knitr)
+```
+
+Now, we're reading in the dad_mom.txt dataset and printing it using kable().
+
+```{r file, echo=FALSE}
+dad_mom <- read.table("dad_mom.txt", header = TRUE)
+
+kable(dad_mom, format = "markdown", align = "l")
+```
+
+In order for this data to be tidy, our columns must represent the four variables - family, parent, name, and income. 
+
+```{r tidying, echo=FALSE}
+tidy_dad_mom <- dad_mom %>%
+#uniting data for the dads and moms separately
+  unite(Dad, name_dad, income_dad) %>%
+  unite(Mom, name_mom, income_mom) %>%
+  
+#gathering the data 
+  gather(key = "Parent", value = "name_income", -fam_id) %>%
+  
+#separating the name_income column to create the final two columns
+  separate(name_income, into = c("Name", "Income")) %>%
+  
+#renaming the fam_id column for cleanliness
+  rename(Family = fam_id)
+```
+ 
+Now that the data is tidy, we can view it as a table using kable()
+
+```{r final, echo=FALSE}
+kable(tidy_dad_mom, format = "markdown", align = "l")
+```

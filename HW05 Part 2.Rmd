@@ -1,0 +1,117 @@
+---
+title: "HW05 Part 2"
+author: "Olivia Pura"
+date: "8/3/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HW05 Part 2
+
+As in Part 1, we need to load the tidyverse package in order to manipulate and wrangle the CTRP files.
+
+```{r packages, message=FALSE}
+library(tidyverse)
+library(knitr)
+```
+
+### Reading in all CTRP files
+
+
+```{r read in, echo=FALSE}
+AUC_1 <- read.csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read.csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read.csv("CTRP_files/compound_info.csv")
+experiment_info <- read.csv("CTRP_files/experiment_info.csv")
+```
+
+### Manipulating the dataset
+
+To begin, we can use bind_rows() to "stack" AUC_1 and AUC_2 on top of each other. Those .csv files have an "experiment_id" column, which can be joined with the "expt_id" column in experiment_info.csv. Next, cancer_cell_line_info.csv can be added by joining the dataframe by the "master_ccl_id" column. Finally,  compound_info.csv can be joined in by the "master_cpd_id" column.
+
+```{r joining, echo=FALSE}
+CTRP_dataset <- AUC_1 %>%
+# combining AUC_1 and AUC_2
+  bind_rows(AUC_2) %>%
+# adding in experiment_info
+  inner_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+# adding in cancer_cell_line_info
+  inner_join(cancer_cell_line_info, by = "master_ccl_id") %>%
+# finally, adding in compound_info
+  inner_join(compound_info, by = "master_cpd_id")
+
+```
+
+### Answering the dataset questions
+
+1. Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+```{r Q1, echo=FALSE}
+# manipulating the CTRP data to make it easier to read
+auc_vorinostat <- CTRP_dataset %>%
+  select(area_under_curve, cancer_type, cpd_name) %>%
+  filter(cpd_name == "vorinostat") %>%
+  filter(cancer_type != "NA") %>%
+  group_by(cancer_type)
+
+# graphing the dataset 
+ggplot(auc_vorinostat, mapping = aes(x = reorder(cancer_type, area_under_curve), y = area_under_curve)) +
+  geom_boxplot(fill = "skyblue") +
+  
+# labeling and asthetics
+  theme_classic() +
+  labs(x = "Cancer Type",
+       y = "Area Under the Curve",
+       title = "Sensitivity of Various Cancer Types to Vorinostat") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .8)) 
+```
+
+**The cancer with the lowest AUC values to vorinostat is Haematopoietic and Lymphoid Tissue	cancer.**
+
+2. Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+```{r Q2, echo=FALSE}
+# again, manipulating the CTRP data to make it easier to read
+prostate_auc <- CTRP_dataset %>%
+  select(area_under_curve, ccl_name, cpd_name) %>%
+  filter(ccl_name == "DU145") %>%
+  arrange(area_under_curve)
+
+lowest_prostate_compound <- prostate_auc[1,3]
+
+print(paste("The DU145 prostate cancer cell line is most sensitive to the compound", lowest_prostate_compound, "."))
+```
+
+**My dataframe did not contain any cell lines called 22RV1. Instead, I'll be using the DU145 prostate cancer cell line.**
+
+3.For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+```{r Q3, echo=FALSE}
+# once more, manipulating the CTRP data to make it easier to read
+egfr_data <- CTRP_dataset %>%
+  select(area_under_curve, cancer_type, gene_symbol_of_protein_target, cpd_name) %>%
+  filter(cancer_type == "breast") %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR")) %>%
+  group_by(cpd_name) %>%
+
+# calculate summary statistics
+  summarise(mean_AUC = mean(area_under_curve))
+
+# graphing the dataset 
+ggplot(egfr_data, mapping = aes(x = reorder(cpd_name, mean_AUC), y = mean_AUC)) +
+  geom_col(fill = "skyblue") +
+  
+# labeling and asthetics
+  theme_classic() +
+  labs(x = "Compound Name",
+       y = "Mean Area Under the Curve",
+       title = "Sensitivity of EGFR Breast Cancer Cell Line to Various Compounds") +
+  theme(axis.text.x = element_text(angle = 45, hjust = .8)) 
+
+```
+
+**The EGFR cancer cell line is least sensitive to afatinib.**
