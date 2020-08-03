@@ -1,0 +1,111 @@
+---
+title: "HW05_Julia"
+author: "Julia Shangguan"
+date: "8/1/2020"
+output: github_document 
+---
+
+```{r setup, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+Loading in necessary packages:
+```{r load libraries}
+#install.packages('tidyverse')
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+```
+
+## Part 1: Tidying the dad_mom file
+
+```{r tidy dad_mom data}
+parent_data <- read.delim("dad_mom.txt") #read dataframe
+
+parent_data_tidy <- parent_data %>%
+  gather(key = "parent", value= "name", name_dad, name_mom) %>% #create name column
+  gather(key= "key1", value = "income", income_dad, income_mom) %>% #create income column
+  select(-key1)
+
+parent_data_tidy$parent <- recode(parent_data_tidy$parent, "name_dad" = "dad", "name_mom" = "mom") #create parent's gender column
+
+parent_data_tidy
+```
+
+## Part 2: Joining together CTRP data
+
+```{r CTRP data}
+#read all dataframes
+cancer_cell_line <- read_csv("CTRP_files/cancer_cell_line_info.csv")
+AUC_1 <- read_csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read_csv("CTRP_files/AUC_2.csv")
+compound_info <- read_csv("CTRP_files/compound_info.csv")
+experiment_info <- read_csv("CTRP_files/Experiment_info.csv")
+```
+
+```{r}
+#looking at each dataframe
+glimpse(cancer_cell_line)
+glimpse(AUC_1)
+glimpse(AUC_2)
+glimpse(compound_info)
+glimpse(experiment_info)
+```
+```{r joining the tables}
+#is it wrong to use full_join to merge all the tables? or should I be using inner_join?
+
+AUC_all_compound<- AUC_1 %>%
+  full_join(AUC_2, by = c("experiment_id", "area_under_curve", "master_cpd_id")) %>%
+  full_join(compound_info, by = "master_cpd_id")
+
+ccl_experiment_AUC_compound <- cancer_cell_line %>%
+  full_join(experiment_info, by = "master_ccl_id") %>%
+  full_join(AUC_all_compound, by=c("expt_id"="experiment_id"))
+
+glimpse(ccl_experiment_AUC_compound)
+```
+
+Which cancer type has the lowest AUC values to the compound "vorinostat"? 
+
+* answer = haematopoietic and lymphoid tissue
+```{r}
+vorinostat_auc <- ccl_experiment_AUC_compound %>%
+  filter(cpd_name == "vorinostat") %>%
+  arrange(area_under_curve)
+
+ggplot(vorinostat_auc, aes(x= reorder(cancer_type, area_under_curve), y = area_under_curve)) + 
+  geom_boxplot() +
+ theme(axis.text.x = element_text(angle = 90, vjust=0.5, hjust=1)) +
+  scale_x_discrete(name = "cancer type")
+
+```
+
+Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+* answer = ? For some reason, I have NA in the compound column
+
+```{r}
+ccl_experiment_AUC_compound %>%
+  filter(ccl_name == "22RV1") %>%
+  arrange(desc(area_under_curve))
+```
+
+For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+* answer = afatinib
+
+
+```{r}
+
+mean_auc <- ccl_experiment_AUC_compound %>%
+  group_by(cpd_name, gene_symbol_of_protein_target) %>%
+  filter(cancer_type == "breast") %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR")) %>%
+  summarize(mean_AUC = mean(area_under_curve)) %>%
+  arrange(mean_AUC)
+
+ggplot(mean_auc, aes(x= reorder(cpd_name, mean_AUC), y =mean_AUC)) + 
+  geom_col() +
+  scale_x_discrete(name = "compound name")
+
+```
