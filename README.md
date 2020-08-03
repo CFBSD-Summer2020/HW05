@@ -1,6 +1,10 @@
 # HW05
 Due August 3rd
 
+### Assignment completed!
+
+Hi! You can find both exercises here: [Rmd file](HW05.Rmd) and [markdown file](HW05.md)
+
 ### HW Assignment
 
 This week the goal is to practice tidying data and joining files together. Similar to last week you can practice these skills with data you already have or you can follow with the two (probably pretty short) HW assignments below.
