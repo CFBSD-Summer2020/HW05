@@ -54,6 +54,105 @@ kable(dad_mom_tidy, format = "markdown")
 
 ```
 
+## Joining together CTRP data
+
+#### Reading and importing files:
+
+```{r}
+
+#Let's make data frames for every file in CTPR_files
+
+AUC_1 <- read_csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read_csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read_csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read_csv("CTRP_files/compound_info.csv")
+experiment_info <- read_csv("CTRP_files/experiment_info.csv")
+
+
+```
+
+#### Joining process:
+
+```{r}
+
+#Bind the AUC files to get a master file
+AUC_total <- AUC_1 %>%
+  bind_rows(AUC_2)
+
+glimpse(AUC_total)
+
+CTRP_df <- AUC_total %>%
+  inner_join(experiment_info, by = c("experiment_id" = "master_ccl_id")) %>%
+  inner_join(cancer_cell_line_info, by = c("experiment_id" = "master_ccl_id")) %>%
+  inner_join(compound_info, by = "master_cpd_id") %>%
+  drop_na(gene_symbol_of_protein_target) %>%
+  separate_rows(gene_symbol_of_protein_target, sep = ";")
+
+
+glimpse(CTRP_df)
+
+```
+
+#### Answering the questions:
+
+
+Once those files are all together, you should have no problem answering the following questions (with graphs):
+
+* Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+```{r}
+
+theme_set(theme_bw())
+
+CTRP_df_q1 <- CTRP_df %>%
+  select(cpd_name, cancer_type, area_under_curve) %>%
+  filter(cpd_name == "vorinostat") %>%
+  group_by(cancer_type) %>%
+  summarize(AUC = mean(area_under_curve)) %>%
+  arrange(AUC)
+
+CTRP_df_q1
+
+ggplot(CTRP_df_q1, aes(cancer_type, AUC)) +
+  geom_col() +
+  coord_flip()
+  
+```
+
+
+
+* Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+```{r}
+
+CTRP_df_q2 <- CTRP_df %>%
+  select(cancer_type, ccl_name, cpd_name, area_under_curve) %>%
+  filter(cancer_type == "prostate", ccl_name == "22RV1") %>%
+  group_by(cpd_name) %>%
+  summarize(AUC = mean(area_under_curve)) %>%
+  arrange(AUC)
+
+
+CTRP_df_q2
+
+```
+
+
+
+* For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+
+```{r}
+
+CTRP_df_q3 <- CTRP_df %>%
+  filter(gene_symbol_of_protein_target == "EGFR", cancer_type == "breast") %>%
+  group_by(cpd_name) %>%
+  summarize(AUC = mean(area_under_curve)) %>%
+  arrange(AUC)
+
+CTRP_df_q3
+
+```
 
 
 
