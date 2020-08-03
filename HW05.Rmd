@@ -1,0 +1,65 @@
+---
+title: "HW05"
+author: "Ricardo Muñiz Trejo"
+date: "2/8/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(tidyverse)
+```
+
+## Tidying the dad_mom file
+
+Untidied version of the dad_mom data frame:
+
+
+```{r}
+dad_mom_messy <- read_tsv("dad_mom.txt")
+
+kable(dad_mom_messy, format = "markdown")
+```
+
+Tidied version of the dad_mom data frame:
+
+```{r}
+
+#Ok, this one can be confusing. The objective is to have 4 variables: fam_id, name, parent, income
+
+dad_mom_tidy <- dad_mom_messy %>%
+  #First we need to create the parent variable which considers if its the mom or the dad
+  separate(col = name_dad, into = c("name_dad", "parent_dad")) %>%
+  separate(col = name_mom, into = c("name_mom", "parent_mom")) %>%
+  replace_na(list(parent_dad = "dad",
+                  parent_mom = "mom")) %>%
+  
+  #For the moment, I joined the name and parent variables into one
+  unite(name_dad, parent_dad, col = "name_dad", sep = "_") %>%
+  unite(name_mom, parent_mom, col = "name_mom", sep = "_") %>%
+  
+  #Now we need to spread the combined name variables to gain columns with the parents names
+  spread(key = name_dad, value = income_dad) %>%
+  spread(key = name_mom, value = income_mom) %>%
+  
+  #We gather everything, eliminating NAs, to get a single column
+  gather(key = "name", value = "income", -fam_id, na.rm = TRUE) %>%
+  
+  #Finally, we separate name and parent variables to finish
+  separate(col = name, into = c("name", "parent")) %>%
+  arrange(fam_id)
+  
+kable(dad_mom_tidy, format = "markdown")
+
+```
+
+
+
+
+## Session info
+
+```{r}
+devtools::session_info()
+```
+
