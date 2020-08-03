@@ -1,0 +1,39 @@
+---
+title: "HW06"
+author: "Brock"
+date: "8/3/2020"
+output: html_document
+---
+#Goal: Tidy data :)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library("tidyverse") #Tidyverse functionalities
+library("lubridate") #Better data/time parsing
+library("knitr") #Nice outputs for tibbles/ dataframes
+library("here") #Pathing for importing data
+```
+
+```{r Data import, message = FALSE}
+dad_mom <- read_delim("dad_mom.txt", delim = "\t")
+
+auc_1 <- read_csv(here("./CTRP_files/AUC_1.csv")) #here() outputs path of current project directory; improved readability vs "C:/BLAH/BLAH/BLAH/BLAH/etc"
+
+auc_2 <- read_csv(here("./CTRP_files/AUC_2.csv"))
+
+cancer_cell_line_info <- read_csv(here("./CTRP_files/cancer_cell_line_info.csv"))
+
+compound_info <- read_csv(here("./CTRP_files/compound_info.csv"))
+
+experiment_info <- read_csv(here("./CTRP_files/Experiment_info.csv")) #here() is MVP
+```
+
+```{r tidy family data}
+tidy_family <- dad_mom %>%
+  gather(key = "parent_type", value = "income", -fam_id) #Gathers income and names of parents, keeps fam_id separate
+  
+```
+
+```{r session info}
+devtools::session_info()
+```
