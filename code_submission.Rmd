@@ -1,0 +1,29 @@
+---
+title: "code_submission"
+author: "Andrea"
+date: "8/3/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+```{r libraries}
+library("tidyverse")
+```
+
+## 1. Tidying the dad_mom file
+
+```{r reading the data}
+dad_mom <- read.delim("dad_mom.txt", sep="\t")
+
+head(dad_mom)
+```
+
+```{r tidying the data}
+
+```
+
+## 2. Joining together CTRP data
+
