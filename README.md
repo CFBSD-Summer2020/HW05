@@ -1,5 +1,5 @@
 # HW05
-Due August 3rd - *submission in `code_submission.md`*
+Due August 3rd - **submission in `code_submission.md`**
 
 ### HW Assignment
 
