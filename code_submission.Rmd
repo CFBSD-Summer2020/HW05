@@ -13,17 +13,115 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library("tidyverse")
 ```
 
+```{r theme}
+my_theme <- theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+theme_set(my_theme)
+```
+
 ## 1. Tidying the dad_mom file
 
 ```{r reading the data}
-dad_mom <- read.delim("dad_mom.txt", sep="\t")
+dad_mom <- read_delim("dad_mom.txt", delim="\t")
 
 head(dad_mom)
 ```
 
 ```{r tidying the data}
+dad_mom_tidy <- dad_mom %>% 
+  pivot_longer(-fam_id, names_to = c(".value", "parent"), names_sep = "_")
 
+dad_mom_tidy
 ```
 
 ## 2. Joining together CTRP data
 
+```{r reading CTRP tables}
+AUC_1 <- read_csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read_csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read_csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read_csv("CTRP_files/compound_info.csv")
+experiment_info <- read_csv("CTRP_files/Experiment_info.csv")
+```
+
+```{r concatenating AUC tables}
+AUC <- AUC_1 %>% 
+  bind_rows(AUC_2)
+```
+
+```{r joining tables}
+all_data <- AUC %>% 
+  left_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+  left_join(cancer_cell_line_info, by = "master_ccl_id") %>%
+  left_join(compound_info, by = "master_cpd_id")
+```
+
+```{r making labels nicer for axes}
+all_data <- all_data %>% 
+  mutate(cancer_type = gsub("_", " ", cancer_type)) %>% 
+  mutate(cpd_name = gsub(" \\(", " \n\\(", cpd_name))
+```
+
+### Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+```{r}
+min_vorinostat_AUC_by_cancer <- all_data %>% 
+  filter(cpd_name == "vorinostat") %>% 
+  drop_na(cancer_type) %>%
+  group_by(cancer_type) %>% 
+  summarize(min_AUC_vorinostat = min(area_under_curve))
+
+min_vorinostat_AUC_by_cancer
+
+ggplot(min_vorinostat_AUC_by_cancer, aes(reorder(cancer_type, -min_AUC_vorinostat), min_AUC_vorinostat)) +
+  geom_bar(stat = "identity") +
+  geom_text(size = 2, aes(label = round(min_AUC_vorinostat, 2)), position=position_dodge(width = 0.9), vjust = -0.25) +
+  scale_y_continuous(expand = expand_scale(mult = c(0, .1))) +
+  labs(title = "Minimum AUC values to vorinostat per cancer type",
+        x = "Cancer Type", y = "Minimum AUC")
+```
+
+Cancer of  the upper aerodigestive tract has the lowest AUC value to vorinostat.
+
+### Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+```{r}
+min_AUC_22RV1 <- all_data %>% 
+  filter(ccl_name == "22RV1") %>%
+  drop_na(cpd_name) %>%
+  group_by(cpd_name) %>%
+  summarize(min_AUC = min(area_under_curve)) %>%
+  top_n(-10, min_AUC)
+
+min_AUC_22RV1
+
+ggplot(min_AUC_22RV1, aes(reorder(cpd_name, -min_AUC), min_AUC)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = round(min_AUC, 2)), position = position_dodge(width = 0.9), vjust = -0.25) +
+  scale_y_continuous(expand = expand_scale(mult = c(0, .1))) +
+  labs(title = "The 10 compounds with the lowest minimum AUC values in 22RV1",
+        x = "Compound", y = "Minimum AUC")
+```
+
+22RV1 is the most sensitive to leptomycin B.
+
+### For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+```{r}
+EGFR_breast_mean_AUC <- all_data %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR"), cancer_type == "breast") %>% 
+  drop_na(cpd_name) %>%
+  group_by(cpd_name) %>% 
+  summarize(mean_AUC = mean(area_under_curve))
+
+EGFR_breast_mean_AUC
+
+ggplot(EGFR_breast_mean_AUC, aes(reorder(cpd_name, -mean_AUC), mean_AUC)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = round(mean_AUC, 2)), position = position_dodge(width = 0.9), vjust = -0.25) +
+  scale_y_continuous(expand = expand_scale(mult = c(0, .1))) +
+  labs(title = "Mean AUC values for compounds targeting EGFR in breast cancer cell lines",
+        x = "Compound", y = "Mean AUC")
+```
+
+Of the 10 compounds that target EGFR, on average afatinib has the lowest AUC value in breast cancer cell lines.
