@@ -61,9 +61,101 @@ kable(dad_mom_tidy, format = "markdown")
 
 ## PART B
 
+Join together the CTRP data and then answer the three questions presented below.
 
+```{r load data}
+#read in all the data
+AUC_1 <- read.csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read.csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read.csv("CTRP_files/compound_info.csv")
+experiment_info <- read.csv("CTRP_files/experiment_info.csv")
+```
 
-```{r }
+to get an initial look at the data and see what variables each file contains
+```{r view data}
+glimpse(AUC_1)
+glimpse(AUC_2)
+glimpse(cancer_cell_line_info)
+glimpse(compound_info)
+glimpse(experiment_info)
+```
 
+join together the separated data frames into one complete data frame with all the information
+```{r join data}
+joined_CTRP_data <- AUC_1 %>%
+  #combine AUC_1 and AUC_2 (stack on top of each other)
+  bind_rows(AUC_2) %>%
+  #combine experiment
+  inner_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+  #combine cancer_cell_line)info
+  inner_join(cancer_cell_line_info, by = "master_ccl_id") %>%
+  #combine compound_info
+  inner_join(compound_info, by = "master_cpd_id")
+
+#view combined data frame
+glimpse(joined_CTRP_data)
+```
+
+# Answering questions using the joined data frame:
+
+1. Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+ANSWER: From the graph below haematopoietic_and_lymphoid_tissue has the lowest AUC values to the compound vorinostat.
+```{r Question 1}
+#create new data frame to make plot
+vorinostat_data <- joined_CTRP_data %>%
+  select(area_under_curve, cancer_type, cpd_name) %>%
+  filter(cpd_name == "vorinostat") %>%
+  filter(cancer_type != "NA") %>%
+  group_by(cancer_type)
+
+#create plot
+ggplot(vorinostat_data, aes(reorder(cancer_type, area_under_curve), area_under_curve)) +
+  #use reorder to organize from lowest to highest value
+  geom_boxplot() +
+  
+  #add labels
+  labs(title = "Cancer Type Responsiveness to Vorinostat",
+       x     = "Cancer Type",
+       y     = "Area Under the Curve") +
+  #make easier to read
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+2. Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+ANSWER: When trying to answer this question i keep getting an error message that the ccl_name "22RV1" is not found so I am not sure if I created this data frame wrong or it just doesn't exist?
+```{r Question 2}
+#create new data frame to make plot
+AUC_22RV1_data <- joined_CTRP_data %>%
+  select(area_under_curve, cancer_type, cpd_name) %>%
+#  filter(ccl_name == "22RV1") %>% #unexpected error, no data with name "22RV1"
+  arrange(desc(area_under_curve))
+
+```
+
+3. For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+ANSWER:  Based on the graph below the compound afatinib has the lowest AUC values.
+```{r Question 3}
+#create new data frame to make plot
+EGFR_data <- joined_CTRP_data %>%
+  select(area_under_curve, cancer_type, gene_symbol_of_protein_target, cpd_name) %>%
+  filter(cancer_type == "breast") %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR")) %>%
+  group_by(cpd_name)
+
+#create plot
+ggplot(EGFR_data, aes(reorder(cpd_name, area_under_curve), area_under_curve)) +
+  #use reorder to organize from lowest to highest value
+  geom_boxplot() +
+
+  #add labels
+  labs(title = "EGFR targeting compounds AUC values in breast cancer",
+       x     = "Compound Name",
+       y     = "Area Under the Curve") +
+  #make easier to read
+  theme(axis.text.x = element_text(angle = 75, hjust = 1))
 ```
 
