@@ -1,0 +1,69 @@
+---
+title: "HW05"
+author: "Ariana F. Tortolani"
+date: "8/3/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## PART A
+Tidy the dad_mom data.
+
+INSTRUCTIONS:
+Clean this up so there are only 4 columns Tidy this data frame so that it adheres to the tidy data principles:
+  Each variable must have its own column.
+  Each observation must have its own row.
+  Each value must have its own cell.
+
+```{r load packages}
+#load necessary packages
+library(tidyverse)
+library(knitr)
+```
+
+Here is an initial look at the data.
+```{r dad_mom_initial}
+#read in data
+dad_mom_initial <- read.delim("dad_mom.txt")
+
+#initial glimpse / visualization of data
+glimpse(dad_mom_initial)
+kable(dad_mom_initial, format = "markdown")
+```
+
+Tidy the data.
+```{r dad_mom_tidy}
+#tidy the data
+dad_mom_tidy <- dad_mom_initial %>%
+  #unite data together for dad and mom
+  unite(Dad, name_dad, income_dad, sep = "_") %>% #unite all dad data
+  unite(Mom, name_mom, income_mom, sep = "_") %>% #unite all mom data
+  
+  #gather data
+  gather(Dad, Mom, -fam_id, key = "Parent", value = "Name_Income") %>% #creates Parent col 
+  
+  #separate name_income col
+  separate(Name_Income, into = c("Name", "Income"), sep = "_") %>%
+  
+#make more readable
+  #clean col names
+  rename(Family = fam_id) %>%
+  #sort by family id
+  arrange(Family)
+
+#view the tidy data
+kable(dad_mom_tidy, format = "markdown")
+```
+
+
+## PART B
+
+
+
+```{r }
+
+```
+
