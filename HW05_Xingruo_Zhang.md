@@ -99,7 +99,7 @@ print(p1)
 
 ![](HW05_Xingruo_Zhang_files/figure-markdown_github/unnamed-chunk-5-1.png)
 
-`Answer`: Haematopietic and lymphoid tissue cancer has the lowest AUC.
+`Answer`: Haematopietic and lymphoid tissue cancer has the lowest AUC values to the compound "vorinostat".
 
 -   Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
 
@@ -124,7 +124,7 @@ print(p2)
 
 ![](HW05_Xingruo_Zhang_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
-`Answer:`Ouabain is the prostate cancer cell most sensitive to.
+`Answer:`The prostate cancer cell most sensitive to ouabain.
 
 -   For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
 

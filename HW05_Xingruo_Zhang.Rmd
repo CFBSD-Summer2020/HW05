@@ -81,7 +81,7 @@ p1 <- ggplot(vorinostat_auc, aes(x = reorder(cancer_type, -mean_AUC), y = mean_A
 print(p1)
 ```
 
-`Answer`: Haematopietic and lymphoid tissue cancer has the lowest AUC. 
+`Answer`: Haematopietic and lymphoid tissue cancer has the lowest AUC values to the compound "vorinostat". 
 
 * Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
 ```{r}
@@ -99,7 +99,7 @@ p2 <- ggplot(prostate, aes(x = reorder(cpd_name, -mean_AUC), y = mean_AUC)) +
 print(p2)
 ```
 
-`Answer:`Ouabain is the prostate cancer cell most sensitive to. 
+`Answer:`The prostate cancer cell most sensitive to ouabain. 
 
 * For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
 ```{r}
@@ -117,3 +117,5 @@ print(p3)
 ```
 
 `Answer:`For the 10 compounds that target EGFR, afatinib has (on average) the lowest AUC values in the breast cancer cell lines. 
+
+
