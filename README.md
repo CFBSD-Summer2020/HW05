@@ -1,9 +1,7 @@
 # HW05
 Due August 3rd
 
-### HW Assignment
-
-This week the goal is to practice tidying data and joining files together. Similar to last week you can practice these skills with data you already have or you can follow with the two (probably pretty short) HW assignments below.
+I practiced with the two HW assignments below.
 
 ## 1. Tidying the dad_mom file
 
@@ -27,3 +25,5 @@ Then once those files are all together, you should have no problem answering the
 * Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
 
 * For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+The [code](HW05.Rmd) is here and the [markdown file](HW05.md) is here.
