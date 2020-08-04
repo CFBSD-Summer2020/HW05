@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(knitr)
 library(ggplot2)
+library(dplyr)
+library(readr)
 ```
 
 ## Part 1: Tidying up the dad_mom file
@@ -89,3 +91,19 @@ cell_sensitive %>%
 #### Execution halted
 #### Not sure how to get past this problem, I'll look at it more when I have more time!
 ```
+
+## Part 2 Q3: For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+```{r Q3: Which of the 10 compounds targetting EGFR has the lowest average AUC values in the breast cancer cell lines?, echo = TRUE}
+EGFR_lowest <- CTRP_total %>%
+  select(area_under_curve, cancer_type, cpd_name, gene_symbol_of_protein_target) %>%
+  filter(cancer_type == "breast") %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR")) %>%
+  arrange(area_under_curve)
+
+print(EGFR_lowest)
+
+
+```
+
+
