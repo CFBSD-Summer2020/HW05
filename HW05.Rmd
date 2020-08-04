@@ -1,0 +1,56 @@
+---
+title: "HW05"
+author: "Honorine Destain"
+date: "8/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tidying the dad_mom file
+
+```{r dad_mom}
+
+library("magrittr") #for piping
+library("tidyverse")
+
+dad_mom <- read.table("dad_mom.txt", header = TRUE)
+
+#separate values for dads and moms into their own dataframes
+dad <- dad_mom %>%
+  select(fam_id, "name" = name_dad, "income" = income_dad)
+mom <- dad_mom %>%
+  select(fam_id, "name" = name_mom, "income" = income_dad)
+
+joined_parents <- dad %>%
+  bind_rows(c(dad, mom), .id = "parent") #recombine vertically, set id to differentiate
+
+#from here, I can't figure out how to change the '1' to 'dad' and '2' to 'mom'
+
+glimpse(joined_parents)
+
+```
+
+## Joining together CTRP data
+
+```{r CTRP data}
+
+#import all data files
+AUC_1 <- read.csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read.csv("CTRP_files/AUC_2.csv")
+line_info <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read.csv("CTRP_files/compound_info.csv")
+experiment_info <- read.csv("CTRP_files/Experiment_info.csv")
+
+#combine files
+joined_CTRP <- AUC_1 %>%
+  full_join(AUC_2, by = c("experiment_id", "area_under_curve", "master_cpd_id")) %>% #add AUC files
+  full_join(compound_info, by = "master_cpd_id") %>% #add compound_info
+  full_join(experiment_info, by = c("experiment_id" = "expt_id")) %>% #add experiment_info
+  full_join(line_info, by = "master_ccl_id") #add line_info
+
+glimpse(joined_CTRP)
+
+```
