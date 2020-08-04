@@ -1,0 +1,166 @@
+---
+title: "HW05"
+output: github_document
+author: "Daniel Krochmal"
+date: "8/4/2020"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``` {r load libraries, echo = FALSE, message = FALSE}
+library(readr)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+
+## Part 1
+
+
+``` {r import data, echo = FALSE, message = FALSE}
+Dad_mom <- read_tsv("dad_mom.txt") #Importing data using readr
+```
+
+``` {r tidy data}
+
+#I will use a sequence of gather(), separate() and spread() verbs to clean-up the datafame
+
+tidyDad_mom <- Dad_mom %>%
+  
+  gather(key = "var", value = "value",
+         convert = FALSE, -fam_id) %>%
+  
+  #Since the "var" column contains two variables, I'm separating them into "var" (name,income) and "relation" (mom,dad)
+  separate(col = var, into = c("var", "relation")) %>%
+  
+  #Since name and income should have their own column, I'm using spread() to accomplish that 
+  spread(key = var, value = value, convert = TRUE) %>%
+  
+  #Reordering column using select. I wanted the "name" to be a second column, so for the rest I used everything()
+  select(fam_id, name, everything()) %>%
+  rename(family = fam_id)
+
+kable(
+  tidyDad_mom,
+  format = "markdown",
+  align = "c"
+)
+```
+## Part 2
+
+``` {r import files, echo = FALSE, message = FALSE}
+
+#importing csv files using readr
+auc1 <- read_csv("CTRP_files/AUC_1.csv")
+auc2 <- read_csv("CTRP_files/AUC_2.csv")
+ccl <- read_csv("CTRP_files/cancer_cell_line_info.csv")
+cpd <- read_csv("CTRP_files/compound_info.csv")
+exp <- read_csv("CTRP_files/Experiment_info.csv")
+
+```
+``` {r join data, echo = FALSE}
+ctrp_data <- auc1 %>%
+  
+  #Binding second part of the experimental data (auc2) to auc1
+  bind_rows(auc2) %>%
+  
+  #Adding experiment info to the experimental data
+  left_join(exp, by = c("experiment_id" = "expt_id")) %>%
+  
+  #Adding compound info
+  left_join(cpd, by = "master_cpd_id" ) %>%
+  
+  #Adding cell line info
+  left_join(ccl, by = "master_ccl_id")
+
+```
+
+### Question 1
+Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+``` {r Q1, echo = FALSE}
+
+#Selecting for the variables relevant to the question, filtering for the compound of interest and grouping by cancer type
+vorinostat <- ctrp_data %>%
+  select(area_under_curve, cpd_name, cancer_type) %>%
+  filter(cpd_name == "vorinostat") %>%
+  drop_na(cancer_type) %>%
+  group_by(cancer_type)
+
+#To get the answer in a simple way I'm using a boxplot with x axis in ascending AUC order
+ggplot(vorinostat, mapping = aes(x = reorder(cancer_type, area_under_curve), y = area_under_curve)) +
+  geom_boxplot() +
+  labs(
+    x = "Cancer type",
+    y = "AUC"
+  ) +
+  
+  theme_classic() +
+  
+  theme(axis.text.x = element_text(angle = 75, hjust = 1, size = 8))
+
+```
+
+**Autonomic ganglia displayed the lowest AUV values to vorinostat**
+
+### Question 2
+Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+
+``` {r Q2, echo = FALSE, message = FALSE}
+
+data_22rv1 <- ctrp_data %>%
+  select(area_under_curve, cpd_name, ccl_name) %>%
+  filter(ccl_name == "22RV1") %>%
+  group_by(cpd_name) %>%
+  summarize(AUC_22rv1 = mean(area_under_curve)) %>%
+  arrange(AUC_22rv1)
+
+#Since the resulting dataframe is too large to plot it reasonably, I'm printing the answer using kable().
+kable(
+  head(data_22rv1, n = 1),
+  format = "markdown",
+  col.names = c("Compound name", "AUC")
+)
+
+```
+
+**Prostate cancer cell line 22RV1 was the most sensitive to leptomycin B**
+
+### Question 3
+For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+``` {r Q3, echo = FALSE}
+
+egfr_data <- ctrp_data %>%
+  select(area_under_curve, cancer_type, cpd_name, gene_symbol_of_protein_target) %>%
+  
+  #Using grepl() to filter for the values in gene_symbol_of_protein_target that contain specified string ("EGFR")
+  filter(grepl("EGFR", gene_symbol_of_protein_target), cancer_type == "breast") %>%
+  group_by(cpd_name)
+
+ggplot(egfr_data, aes(x = reorder(cpd_name, area_under_curve), y = area_under_curve)) +
+  geom_boxplot() +
+  labs(
+    x = "Compound name",
+    y = "AUC"
+  ) +
+  
+  theme_classic() +
+  
+  theme(axis.text.x = element_text(angle = 75, hjust = 1, size = 8))
+
+```
+
+**Out of EGFR-targeting compounds, Afatinib had the lowest AUC values in breast cancer cell lines.**
+
+
+
+```{r session info, echo = FALSE}
+devtools::session_info()
+```
