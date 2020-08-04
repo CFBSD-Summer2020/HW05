@@ -4,15 +4,17 @@ author: "Brock"
 date: "8/3/2020"
 output: html_document
 ---
-#Goal: Tidy data :)
+#Goal: Tidy and join data :)
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 library("tidyverse") #Tidyverse functionalities
 library("lubridate") #Better data/time parsing
 library("knitr") #Nice outputs for tibbles/ dataframes
 library("here") #Pathing for importing data
 ```
+
+Data importing is made easier with the here() function from the "here" package.
 
 ```{r Data import, message = FALSE}
 dad_mom <- read_delim("dad_mom.txt", delim = "\t")
@@ -28,11 +30,36 @@ compound_info <- read_csv(here("./CTRP_files/compound_info.csv"))
 experiment_info <- read_csv(here("./CTRP_files/Experiment_info.csv")) #here() is MVP
 ```
 
+I was stuck on this for quite awhile. I wanted to find a way to combine the name_ income_ variables into a single column, but I couldn't think of a great way to do that. I look forward to reviewing the code for this assignment to see what people came up with!
+
 ```{r tidy family data}
 tidy_family <- dad_mom %>%
   gather(key = "key", value = "value", -fam_id, -name_dad, -name_mom) %>% #Gathers income and names of parents, keeps fam_id separate
   mutate("parent_name" = c(name_dad[1:3], name_mom[1:3])) %>% #I couldn't think of the better way to do this
   transmute(fam_id, parent_name, "parent_type" = str_replace(key, ".+_", ""), "income" = value)
+```
+
+The following are variables of each dataframe:
+auc_1: experiment_id, area_under_curve, master_cpd_id and 
+auc_2 as auc_1
+cancer_cell_line_info: master_ccl_id, ccl_name, cancer_type
+compound_info: master_cpd_id, cpd_name, gene_symbol_of_protein_target
+experiment_info: expt_id, master_ccl_id, experiment_date, cells_per_well
+
+Variable Links:
+compound_info <=> auc_1 = auc_2 <=> experiment_info <=> cancer_cell_line_info
+
+```{r joining CTRP_files}
+ctrp_1 <- auc_1 %>%
+  full_join(compound_info, by = "master_cpd_id") %>%
+  full_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+  full_join(cancer_cell_line_info, by = "master_ccl_id") #Decided to full_join at each step for maximum amount of data
+
+#This code is a mirror of above with auc_2 instead of auc_1
+ctrp_2 <- auc_2 %>%
+  full_join(compound_info, by = "master_cpd_id") %>%
+  full_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+  full_join(cancer_cell_line_info, by = "master_ccl_id")
 ```
 
 ```{r session info}
