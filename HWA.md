@@ -1,32 +1,21 @@
----
-title: "HWA"
-author: "Angela Chun"
-date: "8/4/2020"
-output: github_document
----
+HWA
+================
+Angela Chun
+8/4/2020
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-library(tidyr)
-library(dplyr)
-library(readr)
-library(knitr)
-```
-
-
-In this repo, you'll find a dad_mom.txt file that isn't particularly tidy. Clean this up so there are only 4 columns 
-Tidy this data frame so that it adheres to the tidy data principles:
+In this repo, you’ll find a dad\_mom.txt file that isn’t particularly
+tidy. Clean this up so there are only 4 columns Tidy this data frame so
+that it adheres to the tidy data principles:
 
     Each variable must have its own column.
     Each observation must have its own row.
     Each value must have its own cell.
-Family_id, name, parent, income
 
+Family\_id, name, parent, income
 
-## Load & Tidy dad_mom.txt
+## Load & Tidy dad\_mom.txt
 
-```{r load and tidy dad_mom}
+``` r
 dad_mom <- read.delim("dad_mom.txt", header = TRUE)
 
 dad_mom_tidy <- dad_mom %>%
@@ -46,5 +35,13 @@ dad_mom_tidy <- dad_mom %>%
 
 
 knitr::kable(dad_mom_tidy, format = "markdown", align = "c")
-
 ```
+
+| Family\_ID | Parent | Name | Income |
+| :--------: | :----: | :--: | :----: |
+|     1      |  dad   | Bill | 30000  |
+|     1      |  mom   | Bess | 15000  |
+|     2      |  dad   | Art  | 22000  |
+|     2      |  mom   | Amy  | 22000  |
+|     3      |  dad   | Paul | 25000  |
+|     3      |  mom   | Pat  | 50000  |
