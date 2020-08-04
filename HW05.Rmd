@@ -1,0 +1,159 @@
+---
+title: "HW05"
+author: "Xing Yanfeng"
+date: "2020/8/2"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment 1
+
+### Load libraries and read in data.
+
+```{r libraries data}
+# load libraries
+library(tidyr)
+library(dplyr)
+library(readr)
+library(ggplot2)
+# read in data
+dad_mom <- read_delim("dad_mom.txt", delim = "\t")
+```
+
+### Tidying data
+
+```{r tidying}
+tidy_dad_mom <- dad_mom %>% 
+  gather(key = "key", value = "value", 2:5) %>% 
+  separate(col = key, into = c("key", "relationship")) %>% 
+  spread(key = key, value = value, convert = T) %>% 
+# rearrange columns to make it more comfortable
+  select(fam_id, relationship, name, income)
+print(tidy_dad_mom)
+```
+
+## Assignment 2
+
+### Read in data
+
+```{r read in data}
+AUC_1 <- read_csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read_csv("CTRP_files/AUC_2.csv")
+cell_line <- read_csv("CTRP_files/cancer_cell_line_info.csv")
+compound <- read_csv("CTRP_files/compound_info.csv")
+experiment <-  read_csv("CTRP_files/Experiment_info.csv")
+```
+
+### Join 5 csv files
+
+```{r join 5 csv files}
+cancer_auc <- AUC_1 %>%
+# bind AUC_1 and AUC_2
+  bind_rows(AUC_2)  %>%
+# add experiment information
+  left_join(experiment, by = c("experiment_id" = "expt_id"))  %>%
+# add compound information
+  left_join(compound, by = "master_cpd_id") %>% 
+# add cell line information
+  left_join(cell_line, by = "master_ccl_id")
+```
+
+### Question 1
+
+Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+```{r question 1 data}
+vorinostat <- cancer_auc %>% 
+# filter AUC values and cancer type of vorinostat treated experiments
+  select(area_under_curve, cpd_name, cancer_type) %>% 
+  filter(cpd_name == "vorinostat") %>% 
+  drop_na(cancer_type) %>% 
+# calculate average AUC values
+  group_by(cancer_type) %>% 
+  summarize(AUC = round(mean(area_under_curve), digits = 2)) %>% 
+  arrange(AUC) %>% 
+  mutate(cancer_type = factor(cancer_type, levels = cancer_type))
+```
+
+```{r question 1 graph}
+# plot
+ggplot(vorinostat, aes(x = cancer_type, y = AUC)) +
+  geom_col(fill = "#00CDFF") +
+# add labels
+  labs(x = "Cancer Type", 
+       y = "Area Under Curve", 
+       title = "AUC of Different Cancer Types Treated by Vorinostat") +
+  geom_text(aes(label = AUC), vjust = -0.5, size = 2.5) +
+# adjust theme
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = -30, hjust = 0)) 
+```
+
+```{r}
+print(paste("The cancer type having the lowest AUC values to the compound vorinostat is ", gsub(as.character(vorinostat$cancer_type)[1], pattern = "_", replacement = " "), ".", sep = ""))
+```
+
+### Question 2
+
+Which compound is the prostate cancer cell line 22RV1 most sensitive to?
+
+```{r question 2 data}
+prostate_cancer <- cancer_auc %>% 
+  select(area_under_curve, cpd_name, ccl_name) %>% 
+  filter(ccl_name == "22RV1") %>% 
+# calculate average AUC values of each compound
+  group_by(cpd_name) %>% 
+  summarize(AUC = round(mean(area_under_curve), digits = 2)) %>% 
+  arrange(AUC) 
+```
+
+```{r question 2 answer}
+print(paste("The prostate cancer cell line 22RV1 is most sensitive to ", prostate_cancer[1, 1], ".", sep = ""))
+```
+
+
+### Question 3
+
+For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+```{r question 3 data}
+EGFR <- cancer_auc %>% 
+# filter AUC values of breast cancer cell lines treated by EGFR targeting compounds
+  select(area_under_curve, cpd_name, gene_symbol_of_protein_target, ccl_name, cancer_type) %>% 
+  filter(cancer_type == "breast", grepl("EGFR", gene_symbol_of_protein_target)) %>% 
+# calculate average AUC values of each cell line
+  group_by(cpd_name, ccl_name) %>% 
+  summarize(AUC_ccl = mean(area_under_curve)) %>% 
+# calculate average AUC values of each compound
+  summarize(AUC = round(mean(AUC_ccl), digits = 2)) %>% 
+  arrange(AUC) %>% 
+  mutate(cpd_name = factor(cpd_name, levels = cpd_name))
+```
+
+```{r question 3 graph}
+# plot
+ggplot(EGFR, aes(x = cpd_name, y = AUC)) +
+  geom_col(fill = "#00CDFF") +
+# add labels
+  labs(x = "Compound", 
+       y = "Area Under Curve", 
+       title = "AUC of Breast Cancer Cell Lines Treated by EGFR Targeting Compounds") +
+  geom_text(aes(label = AUC), vjust = -0.5, size = 2.5) +
+# adjust theme
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = -30, hjust = 0))
+```
+
+```{r question 3 answer}
+print(paste("For the 10 compounds that target EGFR, ", as.character(EGFR$cpd_name)[1], " has the lowest AUC values in the breast cancer cell lines.", sep = ""))
+```
+
+```{r session info}
+devtools::session_info()
+```
+
