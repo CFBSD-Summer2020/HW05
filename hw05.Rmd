@@ -1,0 +1,112 @@
+---
+title: "hw05"
+author: "Alex Hoover"
+date: "8/3/2020"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#Part 1
+```{r}
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(readr)
+library(knitr)
+```
+```{r}
+dad_mom<-read_tsv("dad_mom.txt")
+```
+```{r}
+dadmomcombine<-dad_mom%>%
+  gather(key="key",value="value",name_dad:income_mom)%>%
+  separate(key, into=c("x","mom_dad"))%>%
+  spread(key=x,value=value)%>%
+  select(name,mom_dad,income,fam_id)
+kable(dadmomcombine)
+```
+
+#Part 2
+```{r}
+auc1<-read_csv("CTRP_files/AUC_1.csv")
+auc2<-read_csv("CTRP_files/AUC_2.csv")
+cancercelllinfo<-read_csv("CTRP_files/cancer_cell_line_info.csv")
+compoundinfo<-read_csv("CTRP_files/compound_info.csv")
+experimentinfo<-read_csv("CTRP_files/experiment_info.csv")
+```
+```{r}
+auccombined_compounds<-auc1%>%
+  full_join(auc2, by=c("experiment_id","area_under_curve","master_cpd_id"))%>%
+  full_join(compoundinfo,by="master_cpd_id")
+
+Auc_compounds_cell_exp_info<-auccombined_compounds%>%
+  full_join(experimentinfo,by=c("experiment_id"="expt_id"))%>%full_join(cancercelllinfo,by="master_ccl_id")
+#All files combined into one table using full joins. 
+zzmean<-Auc_compounds_cell_exp_info%>%
+  filter(cpd_name=="vorinostat")%>%
+  drop_na(cancer_type)%>%
+  group_by(cancer_type)%>%
+  summarize(mean_auc_by_compound=mean(area_under_curve))%>%
+  arrange(desc(mean_auc_by_compound))%>%
+  mutate(cancer_type=str_replace_all(cancer_type,"_"," "))
+#Looking at mean AUC values for all cell lines tested with vorinostat
+zzlowest<-Auc_compounds_cell_exp_info%>%
+  filter(cpd_name=="vorinostat")%>%
+  drop_na(cancer_type)%>%
+  group_by(cancer_type)%>%
+  summarize(min_auc=min(area_under_curve))%>%
+  arrange(desc(min_auc))%>%
+  mutate(cancer_type=str_replace_all(cancer_type,"_"," "))
+##Made a table that does not calculate the mean AUC value to simply look which cell line had the lowest AUC value in a single trial
+```
+```{r}
+ggplot(zzmean,aes(x=reorder(cancer_type,-mean_auc_by_compound),y=mean_auc_by_compound,))+
+  geom_bar(stat="identity",fill="blue")+
+  labs(x="Cancer Type",y="Mean AUC Vorinostat")+
+  theme(axis.text.x = element_text(angle = 90,hjust=1),text=element_text(size=10))
+
+ggplot(zzlowest, aes(x=reorder(cancer_type,-min_auc),y=min_auc))+
+  geom_bar(stat="identity",fill="green")+
+  labs(x="Cancer Type",y="Lowest AUC Recorded from Single Trial \nVorinostat")+
+  theme(axis.text.x = element_text(angle = 90,hjust=1),text=element_text(size=10))
+##The cancer type with the lowest overall AUC value for a single trial was upper aerodigestive tract, however when looking at the mean AUC for each cancer type, autonomic ganglia has the lowest mean AUC.Graphs are simple and with more time could be made to look much better, but the information is there!!
+```
+
+```{r}
+prostate<-Auc_compounds_cell_exp_info%>%
+  filter(ccl_name=="22RV1")%>%
+  group_by(cpd_name)%>%
+  summarize(mean_auc=mean(area_under_curve))%>%
+  arrange(desc(mean_auc))
+kable(prostate)
+#I just did something simple to calculate the meean AU for each compound tested on cell line 22RV1. CI-976 had the highest mean AUC value.
+```
+```{r}
+egfr<-Auc_compounds_cell_exp_info%>%
+  drop_na(gene_symbol_of_protein_target)%>%
+  mutate(gene=str_detect(gene_symbol_of_protein_target,"EGFR"))%>%
+  filter(gene)%>%
+  group_by(cpd_name)%>%
+  summarize(mean_auc=mean(area_under_curve))%>%
+  arrange(mean_auc)
+kable(egfr)
+#afatinib has the lowest mean AUC value
+```
+
+
+
+
+
