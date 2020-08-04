@@ -1,0 +1,124 @@
+---
+title: "HW05"
+author: "Brock"
+date: "8/3/2020"
+output: html_document
+---
+#Goal: Tidy and join data :)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("tidyverse") #Tidyverse functionalities
+library("knitr") #Nice outputs for tibbles/ dataframes
+library("here") #Pathing for importing data
+
+```
+
+Data importing is made easier with the here() function from the "here" package.
+
+```{r Data import, message = FALSE}
+dad_mom <- read_delim("dad_mom.txt", delim = "\t")
+
+auc_1 <- read_csv(here("./CTRP_files/AUC_1.csv")) #here() outputs path of current project directory; improved readability vs "C:/BLAH/BLAH/BLAH/BLAH/etc"
+
+auc_2 <- read_csv(here("./CTRP_files/AUC_2.csv"))
+
+cancer_cell_line_info <- read_csv(here("./CTRP_files/cancer_cell_line_info.csv"))
+
+compound_info <- read_csv(here("./CTRP_files/compound_info.csv"))
+
+experiment_info <- read_csv(here("./CTRP_files/Experiment_info.csv")) #here() is MVP
+```
+
+I was stuck on this for quite awhile. I wanted to find a way to combine the name_ income_ variables into a single column, but I couldn't think of a great way to do that. I look forward to reviewing the code for this assignment to see what people came up with!
+
+```{r tidy family data}
+tidy_family <- dad_mom %>%
+  gather(key = "key", value = "value", -fam_id, -name_dad, -name_mom) %>% #Gathers income and names of parents, keeps fam_id separate
+  mutate("parent_name" = c(name_dad[1:3], name_mom[1:3])) %>% #I couldn't think of a better way to do this
+  transmute(fam_id, parent_name, "parent_type" = str_replace(key, ".+_", ""), "income" = value)
+```
+
+The following are variables of each dataframe:
+
+* auc_1: experiment_id, area_under_curve, master_cpd_id and
+
+* auc_2 as auc_1
+
+* cancer_cell_line_info: master_ccl_id, ccl_name, cancer_type
+
+* compound_info: master_cpd_id, cpd_name, gene_symbol_of_protein_target
+
+* experiment_info: expt_id, master_ccl_id, experiment_date, cells_per_well
+
+Variable Links:
+compound_info <=> auc_1 = auc_2 <=> experiment_info <=> cancer_cell_line_info
+
+```{r joining CTRP_files}
+ctrp <- auc_1 %>%
+  full_join(auc_2, by = c("experiment_id", "area_under_curve", "master_cpd_id")) %>%
+  full_join(compound_info, by = "master_cpd_id") %>%
+  full_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
+  full_join(cancer_cell_line_info, by = "master_ccl_id") %>% #Decided to full_join at each step for maximum amount of data
+  select(experiment_date, experiment_id, master_cpd_id, cpd_name, master_ccl_id, gene_symbol_of_protein_target, ccl_name, 
+         cancer_type, area_under_curve) #reordering variables in a way that makes sense to me, dropped cells_per_well (equal to 500 in all cases)
+
+```
+Questions to answer:
+
+* Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+* Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+* For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+```{r Vorinostat}
+low_auc_vorinostat <- ctrp %>%
+  filter(master_cpd_id == 56554) %>%
+  group_by(cancer_type) %>%
+  mutate("mean_auc_cancer_type" = mean(area_under_curve), "sd_auc_cancer_type" = sd(area_under_curve)) %>% #I could do this with summarise
+  ungroup() %>%
+  select(cancer_type, mean_auc_cancer_type, sd_auc_cancer_type) %>%
+  distinct() %>%
+  filter(cancer_type != "NA_character_") %>% #Removed NA cancer_type
+  arrange(mean_auc_cancer_type)
+
+low_auc_vorinostat %>% 
+  ggplot(aes(x = fct_inorder(cancer_type), y = mean_auc_cancer_type)) +
+  geom_col() + coord_flip() +
+  geom_errorbar(aes(ymin = mean_auc_cancer_type - (2*sd_auc_cancer_type), ymax = mean_auc_cancer_type + (2*sd_auc_cancer_type))) +
+  labs(x= "Cancer Type", y = "Mean Area Under Dose Response Curve (95% CI)", title= "Cancer Type Responses to Vorinostat")
+```
+
+Autonomic ganglia was the cancer type with lowest mean area under the dose response curve with only vorinostat treatment, but that mean fell within the 95% confidence interval of most of the other cancer types.
+```{r 22RV1}
+low_auc_22RV1 <- ctrp %>%
+  filter(ccl_name == "22RV1") %>%
+  select(cpd_name, area_under_curve) %>%
+  group_by(cpd_name) %>%
+  summarise(mean_auc = mean(area_under_curve)) %>%
+  ungroup() %>% 
+  arrange(mean_auc)
+
+low_auc_22RV1[1:20,] %>%
+  kable(col.names = c("Compound Name", "Mean Area Under Response Curve"), caption = "Compounds with the greatest effect on 22RV1")
+```
+Cancer type 22RV1 is appears to be most sensitive to leptomycin B.
+
+```{r targetting EGFR and breast cancer cell lines}
+egfr_breast_cancer <- ctrp %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR"), cancer_type %in% "breast") %>%
+  group_by(cpd_name) %>%
+  transmute(cpd_name, mean_auc = mean(area_under_curve)) %>%
+  ungroup() %>%
+  distinct() %>%
+  arrange(mean_auc)
+
+egfr_breast_cancer %>%
+  kable(col.names = c("Compound Name", "Mean Area Under Response Curve"), caption = "Response of Breast Cancers to Compound that Targets EGFR")
+
+```
+Out of the compounds that target EGFR, breast cancer cell types are the most sensitive to afatinib.
+
+```{r session info}
+devtools::session_info()
+```
