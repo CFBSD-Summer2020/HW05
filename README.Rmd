@@ -1,41 +1,62 @@
-Homework 5
-================
-Ben Wang
-8/3/20
+---
+title: "Homework 5"
+author: "Ben Wang"
+date: "8/3/20"
+output: github_document
+---
 
-    ## -- Attaching packages ----------------------------------------------------------- tidyverse 1.3.0 --
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(readr)
+```
 
-    ## v ggplot2 3.3.2     v purrr   0.3.4
-    ## v tibble  3.0.1     v dplyr   1.0.0
-    ## v tidyr   1.1.0     v stringr 1.4.0
-    ## v readr   1.3.1     v forcats 0.5.0
+## Part 1: Tidying up the dad_mom file
 
-    ## -- Conflicts -------------------------------------------------------------- tidyverse_conflicts() --
-    ## x dplyr::filter() masks stats::filter()
-    ## x dplyr::lag()    masks stats::lag()
+```{r show P1 data, echo = FALSE}
+dad_mom <- read.delim("dad_mom.txt", header = TRUE)
+kable(dad_mom, format = "markdown")
+### Just taking a look at what we're working with
+```
 
-## Part 1: Tidying up the dad\_mom file
-
-| fam\_id | name\_dad | income\_dad | name\_mom | income\_mom |
-| ------: | :-------- | ----------: | :-------- | ----------: |
-|       1 | Bill      |       30000 | Bess      |       15000 |
-|       2 | Art       |       22000 | Amy       |       22000 |
-|       3 | Paul      |       25000 | Pat       |       50000 |
-
-| fam\_id | Parent | Name | Income |
-| ------: | :----- | :--- | :----- |
-|       1 | mom    | Bess | 15000  |
-|       2 | mom    | Amy  | 22000  |
-|       3 | mom    | Pat  | 50000  |
-|       1 | dad    | Bill | 30000  |
-|       2 | dad    | Art  | 22000  |
-|       3 | dad    | Paul | 25000  |
+```{r tidying, echo = FALSE}
+tidy_dad_mom <- dad_mom %>%
+  unite(dad, name_dad, income_dad) %>%
+  unite(mom, name_mom, income_mom) %>%
+### Put together all the mom data under 'mom' and dad data under 'dad', now to put it together into a chart
+  gather(key = "Parent", value = "value", mom, dad) %>%
+  separate("value", into = c("Name", "Income"))
+### Print out the results
+kable(tidy_dad_mom, format = "markdown")
+```
 
 ## Part 2: Joining together CTRP data
 
-## Part 2 Q1: Which cancer type has the lowest AUC values to the compound “vorinostat”?
+```{r show P2 data, echo = FALSE}
+AUC_1 <- read.csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read.csv("CTRP_files/AUC_2.csv")
+ccell_info <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+cmpd_info <- read.csv("CTRP_files/compound_info.csv")
+expt_info <- read.csv("CTRP_files/Experiment_info.csv")
+```
 
-``` r
+```{r join, echo = FALSE}
+CTRP_total <- AUC_1 %>%
+  bind_rows(AUC_2) %>%
+  inner_join(expt_info, by = c("experiment_id" = "expt_id")) %>%
+  inner_join(ccell_info, by = "master_ccl_id") %>%
+  inner_join(cmpd_info, by = "master_cpd_id") 
+
+### print(CTRP_total)
+### Nevermind, don't print this out, the document is far too long
+```
+
+## Part 2 Q1: Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+```{r Q1: Which cancer type has the lowest AUC values to the compound "vorinostat"?, echo = TRUE}
 vorinostat_lowest <- CTRP_total %>%
   filter(cpd_name == "vorinostat") %>%
   arrange(area_under_curve)
@@ -45,19 +66,14 @@ vorinostat_lowest %>%
   aes(area_under_curve, cancer_type) +
   labs(title = "Vorinostat area under curve by cancer type", x = "Area under curve", y = "Cancer type") +
   geom_boxplot()
-```
 
-\[\](README\_files/figure-gfm/Q1: Which cancer type has the lowest AUC
-values to the compound “vorinostat”?-1.png)<!-- -->
-
-``` r
 ### print(vorinostat_lowest)
 ### Seems like I can't get my boxplot to show up, not sure why. I manually printed out the data using print(vorinostat_lowest) and found that the lowest AUC values are predominantly "Haematopoietic and Lymphoid Tissues"
 ```
 
 ## Part 2 Q2: Which compound is the prostate cancer cell line 22RV1 most sensitive to?
 
-``` r
+```{r Q2: Which compound is the prostate cancer cell line 22RV1 most sensitive to?, echo = TRUE}
 cell_sensitive <- CTRP_total %>%
   filter(ccl_name == "22RV1") %>%
   arrange(area_under_curve)
@@ -67,11 +83,7 @@ cell_sensitive %>%
   aes(area_under_curve, cpd_name) +
   labs(title = "22Rv1 sensitive compounds", x = "Area under curve", y = "Compound name") +
   geom_boxplot()
-```
 
-![](README_files/figure-gfm/Q2:%20Which%20compound%20is%20the%20prostate%20cancer%20cell%20line%2022RV1%20most%20sensitive%20to?-1.png)<!-- -->
-
-``` r
 ### print(cell_sensitive) 
 ### Getting an error code I copy/pasted below. In the meantime, continuing my brute-force method, I manually printed out the data and found that the highest sensitivity was to Leptomycin B
 #### Error code: File README_files/figure-gfm/Q2: Which compound is the prostate cancer cell line 22RV1 most sensitive to not found in resource path
@@ -82,7 +94,7 @@ cell_sensitive %>%
 
 ## Part 2 Q3: For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
 
-``` r
+```{r Q3: Which of the 10 compounds targetting EGFR has the lowest average AUC values in the breast cancer cell lines?, echo = TRUE}
 EGFR_lowest <- CTRP_total %>%
   select(area_under_curve, cancer_type, cpd_name, gene_symbol_of_protein_target) %>%
   filter(cancer_type == "breast") %>%
@@ -94,11 +106,9 @@ EGFR_lowest %>%
   aes(area_under_curve, cpd_name) +
   labs(title = "AUC values of compounds targeting EGFR in breast cancer cell lines", x = "Area under curve", y = "Compound name") +
   geom_boxplot()
-```
 
-![](README_files/figure-gfm/Q3:%20Which%20of%20the%2010%20compounds%20targetting%20EGFR%20has%20the%20lowest%20average%20AUC%20values%20in%20the%20breast%20cancer%20cell%20lines?-1.png)<!-- -->
-
-``` r
 ### print(EGFR_lowest)
 ### Looks like afatinib has the lowest average AUC values in breast cancer cell lines. Neratinib has the absolute lowest AUC value, however.
 ```
+
+
