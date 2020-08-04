@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+##HW05 Assignment #1
+
 ```{r}
 library(tidyr)
 library(dplyr)
@@ -16,7 +18,7 @@ library(ggplot2)
 
 dad_mom <- read.delim("dad_mom.txt")
 tidy_dad_mom <- dad_mom %>%
-  gather(key = "key", value = "value", 2:5) %>%
+  gather(key = "key", value = "value", 2:5) %>%  
   separate(key, into = c("name", "parent")) %>%
   spread(name, value) %>%
   ggplot(aes(x = parent, y = income, fill = parent)) +
@@ -32,6 +34,19 @@ tidy_dad_mom
 
 
 
+##HW05 Assignment #2
+## NOTE: THIS ASSIGNMENT IS NOT COMPLETE!!!!
+```{r}
+AUC_1 <- read.csv("AUC_1.csv", header = TRUE, stringsAsFactors = FALSE)
+AUC_2 <- read.csv("AUC_2.csv", header = TRUE, stringsAsFactors = FALSE)
+cell_line <- read.csv("cancer_cell_line_info.csv", header = TRUE, stringsAsFactors = FALSE)
+compound <- read.csv("compound_info.csv", header = TRUE, stringsAsFactors = FALSE)
+exp_info <- read.csv("experiment_info.csv", header = TRUE, stringsAsFactors = FALSE)AU
+
+AUC_join <- AUC_1 %>%
+  inner_join(AUC_2, by = "experiment_id", )
+AUC_join
+```
 
 
 
