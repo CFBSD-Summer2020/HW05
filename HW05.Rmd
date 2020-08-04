@@ -50,16 +50,12 @@ Variable Links:
 compound_info <=> auc_1 = auc_2 <=> experiment_info <=> cancer_cell_line_info
 
 ```{r joining CTRP_files}
-ctrp_1 <- auc_1 %>%
+ctrp <- auc_1 %>%
+  full_join(auc_2, by = c("experiment_id", "area_under_curve", "master_cpd_id")) %>%
   full_join(compound_info, by = "master_cpd_id") %>%
   full_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
   full_join(cancer_cell_line_info, by = "master_ccl_id") #Decided to full_join at each step for maximum amount of data
 
-#This code is a mirror of above with auc_2 instead of auc_1
-ctrp_2 <- auc_2 %>%
-  full_join(compound_info, by = "master_cpd_id") %>%
-  full_join(experiment_info, by = c("experiment_id" = "expt_id")) %>%
-  full_join(cancer_cell_line_info, by = "master_ccl_id")
 ```
 
 ```{r session info}
