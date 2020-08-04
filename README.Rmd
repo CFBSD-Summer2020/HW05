@@ -82,5 +82,10 @@ cell_sensitive %>%
   labs(title = "22Rv1 sensitive compounds", x = "Area under curve", y = "Compound name") +
   geom_boxplot()
 
-print(cell_sensitive)
+### print(cell_sensitive) 
+### Getting an error code I copy/pasted below. In the meantime, continuing my brute-force method, I manually printed out the data and found that the highest sensitivity was to Leptomycin B
+#### Error code: File README_files/figure-gfm/Q2: Which compound is the prostate cancer cell line 22RV1 most sensitive to not found in resource path
+#### Error: pandoc document conversion failed with error 99
+#### Execution halted
+#### Not sure how to get past this problem, I'll look at it more when I have more time!
 ```
