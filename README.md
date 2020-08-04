@@ -1,6 +1,10 @@
 # HW05
 Due August 3rd
 
+## Submission
+
+My submission file is [HW05.Rmd](HW05.Rmd). I used the datasets given for the assignment.
+
 ### HW Assignment
 
 This week the goal is to practice tidying data and joining files together. Similar to last week you can practice these skills with data you already have or you can follow with the two (probably pretty short) HW assignments below.
