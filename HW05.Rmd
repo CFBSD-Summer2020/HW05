@@ -54,7 +54,7 @@ cancer_auc <- AUC_1 %>%
 # bind AUC_1 and AUC_2
   bind_rows(AUC_2)  %>%
 # add experiment information
-  inner_join(unique(experiment), by = c("experiment_id" = "expt_id"))  %>%
+  left_join(experiment, by = c("experiment_id" = "expt_id"))  %>%
 # add compound information
   left_join(compound, by = "master_cpd_id") %>% 
 # add cell line information
@@ -104,17 +104,7 @@ Which compound is the prostate cancer cell line 22RV1 most sensitive to?
 ```{r question 2 data}
 prostate_cancer <- cancer_auc %>% 
   select(area_under_curve, cpd_name, ccl_name) %>% 
-  filter(ccl_name == "22RV1") 
-prostate_cancer
-```
-
-There are no observations with `ccl_name == "22RV1"` in `cancer_auc`, and there might be some problems with the dataset. So I answered the question "Which compound is the breast cancer cell line KPL1 most sensitive to?" instead.
-
-```{r question 2 data2}
-KPL1 <- cancer_auc %>% 
-# filter AUC values of KPL1 treated by different compounds
-  select(area_under_curve, cpd_name, ccl_name) %>% 
-  filter(ccl_name == "KPL1") %>% 
+  filter(ccl_name == "22RV1") %>% 
 # calculate average AUC values of each compound
   group_by(cpd_name) %>% 
   summarize(AUC = round(mean(area_under_curve), digits = 2)) %>% 
@@ -122,7 +112,7 @@ KPL1 <- cancer_auc %>%
 ```
 
 ```{r question 2 answer}
-print(paste("The breast cancer cell line KPL1 is most sensitive to ", KPL1[1, 1], ".", sep = ""))
+print(paste("The prostate cancer cell line 22RV1 is most sensitive to ", prostate_cancer[1, 1], ".", sep = ""))
 ```
 
 
