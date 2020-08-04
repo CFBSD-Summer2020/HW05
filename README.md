@@ -1,6 +1,15 @@
 # HW05
 Due August 3rd
 
+
+Hello reviewer! I have 2 code files for you, HW05A_script.R contains my answer to part A of the homework and its counterpart HW05B_script.R contains my answers to part B.
+
+Answers for part B for quick reference:
+A) upper aerodigestive tract cancer
+B) leptomycin B
+C) afatinib
+
+
 ### HW Assignment
 
 This week the goal is to practice tidying data and joining files together. Similar to last week you can practice these skills with data you already have or you can follow with the two (probably pretty short) HW assignments below.
