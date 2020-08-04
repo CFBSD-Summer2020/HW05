@@ -101,9 +101,14 @@ EGFR_lowest <- CTRP_total %>%
   filter(str_detect(gene_symbol_of_protein_target, "EGFR")) %>%
   arrange(area_under_curve)
 
-print(EGFR_lowest)
+EGFR_lowest %>%
+  ggplot() +
+  aes(area_under_curve, cpd_name) +
+  labs(title = "AUC values of compounds targeting EGFR in breast cancer cell lines", x = "Area under curve", y = "Compound name") +
+  geom_boxplot()
 
-
+### print(EGFR_lowest)
+### Looks like afatinib has the lowest average AUC values in breast cancer cell lines. Neratinib has the absolute lowest AUC value, however.
 ```
 
 
