@@ -1,0 +1,133 @@
+---
+title: "HW05"
+output: github_document
+author: Bei Wang
+---
+
+```{r load pkgs, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("tidyverse")
+library("magrittr")
+library("knitr")
+library("readr")
+```
+
+## 1. Tidying the dad_mom file
+
+    Each variable must have its own column.
+    Each observation must have its own row.
+    Each value must have its own cell.
+
+```{r dad_mom}
+#read dataset
+dad_mom<- read.table("dad_mom.txt", header=TRUE) 
+
+#reshape
+tidy_dad_mom<- dad_mom %>%
+  unite("dad", name_dad, income_dad) %>%
+  unite("mom", name_mom, income_mom) %>%
+  pivot_longer(c(dad, mom), names_to="parent", values_to="income") %>%
+  separate(income, c("name", "income"))
+
+#print
+tidy_dad_mom
+```
+
+## 2. Joining together CTRP data
+
+```{r totalauc}
+#read files
+AUC_1 <- read_csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read_csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read_csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read_csv("CTRP_files/compound_info.csv")
+Experiment_info <- read_csv("CTRP_files/Experiment_info.csv")
+
+#glimpse
+glimpse(AUC_1)
+glimpse(AUC_2)
+glimpse(cancer_cell_line_info)
+glimpse(compound_info)
+glimpse(Experiment_info)
+
+#Since AUC_1 and AUC_2 look like two parrelle data frame with links to the other files, so i join AUC_1 and _2 first, and then combin them with the other files
+
+#join AUC_1 with _2
+AUC<- AUC_1 %>%
+  bind_rows(AUC_2)
+
+#join auc with other files
+total_AUC<- AUC %>%
+  inner_join(Experiment_info, by=c("experiment_id"="expt_id")) %>%
+  inner_join(compound_info, by="master_cpd_id") %>%
+  inner_join(cancer_cell_line_info, by="master_ccl_id") 
+```
+
+* Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+  * answer: haematopoietic_and_lymphoid_tissue
+  
+```{r q1}
+#average AUC of different cancer types
+q1<- total_AUC %>%
+  select(area_under_curve, cancer_type, cpd_name) %>%
+  filter(cpd_name== "vorinostat") %>%
+  group_by(cancer_type) %>%
+  drop_na(cancer_type) %>%
+  summarize(AUC= mean(area_under_curve))
+  
+#plot
+q1 %>%
+  ggplot(aes(x=cancer_type, y=AUC, fill=cancer_type))+
+  geom_col()+
+  labs(title="Which cancer type has the lowest AUC values to the compound vorinostat", x=element_blank(), y="Average Area Under the Curve")+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  theme(legend.position="none")
+```
+
+* Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+  * answer: LBH-589
+  
+```{r q2}
+#it returns 0 row when using 22RV1 for ccl_name, unsure why.
+total_AUC %>%
+  select(ccl_name, cpd_name, area_under_curve) %>%
+  filter(ccl_name=="22RV1") %>%
+  arrange(area_under_curve)
+
+#instead use prostate as in cancer_type 
+q2<- total_AUC %>%
+  select(cancer_type, cpd_name, area_under_curve) %>%
+  filter(cancer_type=="prostate") %>%
+  arrange(area_under_curve)
+
+#select the lowest 5 in terms of auc for plotting
+low5<- q2[1:5,] 
+
+low5 %>%
+  ggplot(aes(x=cpd_name, y=area_under_curve, fill= cpd_name)) +
+  geom_col()+
+  labs(title="For prostate cancer cell line, the five componds have the lowest AUC value", x=element_blank(), y="Area Under the Curve")+
+  theme(legend.position="none")
+```
+
+* For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer
+
+  * "WZ8040" has the lowest average value
+  * There are only 3 compounds I filtered based on the question, instead of 10, I'm not sure if the way I did it is incorrect.  
+
+```{r q3}
+#filter the AUC according to the question
+q3<- total_AUC %>%
+  select(gene_symbol_of_protein_target, area_under_curve, cpd_name, cancer_type) %>%
+  filter(gene_symbol_of_protein_target=="EGFR", cancer_type=="breast") %>%
+  group_by(cpd_name) %>%
+  summarize(AUC=mean(area_under_curve)) #my filtered cpd_name has only 3 different values instead of 10?
+
+#plot
+q3 %>% ggplot(aes(x=cpd_name, y=AUC, fill= cpd_name)) +
+  geom_col() +
+  labs(title="AUC values of compounds that target EGFR in breast cancer", x=element_blank(), y="Average Area Under the Curve")+
+  theme(legend.position="none")
+```
