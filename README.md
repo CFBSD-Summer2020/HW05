@@ -1,6 +1,10 @@
 # HW05
 Due August 3rd
 
+## Laura's notes:
+
+I like to keep the HW assignment below for reference purposes when creating the answers. This document contains an R file and an Rmd file, both named HW05. They contain the same material/code; I include both so that whatever you prefer to look at is accessible to you. Enjoy~~~
+
 ### HW Assignment
 
 This week the goal is to practice tidying data and joining files together. Similar to last week you can practice these skills with data you already have or you can follow with the two (probably pretty short) HW assignments below.
