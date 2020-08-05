@@ -1,0 +1,158 @@
+---
+title: "HW05"
+author: "Patrick Cantwell"
+date: "8/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("tidyr")
+library("dplyr")
+library("ggplot2")
+library("ggrepel")
+library(RColorBrewer)
+```
+
+#Assignment 1
+
+```{r Assignment_1}
+dad_mom <- read.delim("dad_mom.txt")
+
+dad_mom_fix <- gather(dad_mom, key = "key", value = "value", c("name_dad", "name_mom")) %>% 
+  mutate(parent_type = c(rep("Dad", 3), rep("Mom", 3))) %>% 
+  mutate(income = c(income_dad[1:3], income_mom[4:6])) %>% 
+  select(c("fam_id", "parent_type", "parent_name" = "value", "parent_income" = "income")) #I reordered and changed the names of the columns
+
+#The way I did this does not seem reproduceable at a larger scale - I am excited to see how everyone else did a better job!
+```
+
+#Assignment 2
+
+The first step is to join all of the files together:
+
+* But step 0 is to read the files into data frames
+```{r}
+AUC_1 <- read.csv("CTRP_files/AUC_1.csv")
+AUC_2 <- read.csv("CTRP_files/AUC_2.csv")
+cancer_cell_line_info <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+compound_info <- read.csv("CTRP_files/compound_info.csv")
+experiment_info <- read.csv("CTRP_files/Experiment_info.csv")
+```
+
+```{r File_Joining}
+#Since a look at both AUC_1 and AUC_2 seems to show that AUC_2 is just a continuation of AUC_1 (potentially due to a technical limitation),
+#I decided to combine the two data frames together by row instead of by a shared column
+
+AUC <- bind_rows(AUC_1, AUC_2)
+
+full_AUC <- AUC %>% 
+  inner_join(compound_info, by = "master_cpd_id") %>% 
+  inner_join(experiment_info, by = c("experiment_id" = "expt_id")) %>% 
+  inner_join(cancer_cell_line_info, by = "master_ccl_id")
+```
+
+##Question 1: *Which cancer type has the lowest AUC values to the compound "vorinostat"?*
+
+```{r}
+vorino_AUC <- full_AUC %>% 
+  select(cancer_type, cpd_name, area_under_curve) %>% 
+  filter(cpd_name == "vorinostat") %>% 
+  group_by(cancer_type)
+
+vorino_AUC %>% 
+  ggplot(aes(x = reorder(cancer_type, -area_under_curve), y = area_under_curve), ) +
+    geom_jitter(size = 0.7, alpha = 0.4, color = "red") +
+    geom_boxplot(alpha = 0) +
+    labs(
+        title = "Dose Response Curve (AUC) of Cancer Types to Vorinostat",
+        x = "Cancer Types",
+        y = "AUC"
+    ) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))  #From an aesthetic perspective, the x-axis looks terrible. This could be fixed by using abbreviations for the cancer types
+```
+
+```{r}
+vorino_AUC_mean <- vorino_AUC %>% 
+  summarize("mean_AUC" = mean(area_under_curve)) %>% 
+  arrange(mean_AUC)
+#This was just to get a better look at the data
+vorino_AUC_mean
+```
+
+If you use the graph, the boxplot will show the median value of the AUC for each cancer type by the line inside the boxes. This shows that haematopoietic and lymphoid tissue cancer has the smallest AUC value for the drug. However, the mean value for autonomic ganglia cancer is actually lower, as vorino_AUC_mean shows. Both cancer types have a noticeably lesser response to the drug than the other types tested.
+
+
+##Question 2: *Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)*
+
+
+```{r}
+prostate_cpd <- full_AUC %>% 
+  select(ccl_name, cpd_name, area_under_curve) %>% 
+  filter(ccl_name == "22RV1") %>% 
+  arrange(area_under_curve)
+
+unique(prostate_cpd$cpd_name) %>% 
+  length() %>%
+  print()
+
+length(prostate_cpd$cpd_name) %>% 
+  print()
+
+```
+This code shows that there are no repeats of compounds in this data frame, which would be important since I would need to find the means of the AUC for each compound from multiple experiments. If both numbers were different, that would mean that the unique() function got rid of a repeat (ie. multiple experiments for a single compound)
+
+
+```{r}
+prostate_cpd_low <- prostate_cpd[1:10, ] #I did this to clean up the graph, otherwise it would be very cluttered and difficult to read
+
+prostate_cpd_low %>% 
+  ggplot(aes(x = reorder(cpd_name, -area_under_curve), y = area_under_curve)) +
+  geom_col(fill = "red4") +
+  labs(
+      title = "AUC values of select compounds to prostate cell line 22RV1",
+      x = "Compound",
+      y = "AUC"
+  ) +
+  theme_classic() +
+  scale_y_continuous(expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+  #As with the previous graph, the x-axis is a mess. In a publication worthy graph, the longer compound names would be abbreviated
+```
+This shows that the compound most sensitive to 22RV2 is **leptomycin B**.
+
+##Question 3: *For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?*
+
+```{r}
+EGFR_breast_cpd <- full_AUC %>% 
+  select(cpd_name, cancer_type, ccl_name, gene_symbol_of_protein_target, area_under_curve) %>% 
+  filter(
+        grepl("breast", cancer_type),
+        grepl("EGFR", gene_symbol_of_protein_target)) %>% 
+  group_by(cpd_name) %>% 
+  mutate("mean_AUC" = mean(area_under_curve))
+
+EGFR_breast_cpd %>% 
+  ggplot(aes(x = reorder(cpd_name, -mean_AUC), y = area_under_curve)) +
+  geom_jitter(aes(color = cpd_name), width = 0.17, alpha = 0.8) + #setting width creates distinction between the points of different compounds
+  geom_point(aes(y = mean_AUC)) + #since 
+  geom_boxplot(alpha = 0) + 
+  scale_color_brewer(palette = "Set3") +
+  theme_classic() +
+  labs(
+      title = "AUC values of compounds that target EGFR in breast cancer cell lines",
+      x = "Compound",
+      y = "AUC"
+  ) +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+  
+#I was not able to get the aesthetic of geom_boxplot() "middle =" to work, which would change what the middle line of the boxplot represents
+#I wanted to make it represent the mean and not the median so that the ordering of the x-axis made more sense to the viewer
+
+```
+
+This graph shows that the compound that (on average) has the lowest AUC value is **afatinib**
+
