@@ -1,5 +1,5 @@
 ---
-title: "dad_mom_cleanup"
+title: "HW05"
 author: "Patrick Cantwell"
 date: "8/2/2020"
 output: html_document
@@ -70,8 +70,7 @@ vorino_AUC %>%
         y = "AUC"
     ) +
     theme_classic() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))  #From an aesthetic perspective, the x-axis looks terrible. This could be fixed
-                                                              #by using abbreviations for the cancer types
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))  #From an aesthetic perspective, the x-axis looks terrible. This could be fixed by using abbreviations for the cancer types
 ```
 
 ```{r}
