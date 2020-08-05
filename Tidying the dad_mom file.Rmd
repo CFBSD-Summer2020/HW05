@@ -1,0 +1,53 @@
+---
+title: "Tidying the dad_mom file"
+output: github_document
+---
+
+## 1. Load packages
+```{r load packages}
+
+library(data.table)
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(knitr)
+
+```
+
+## 2. Load data
+```{r load data}
+
+dad_mom <- fread("dad_mom.txt")
+
+```
+
+## 3. Tidy the file
+```{r tidy}
+
+dad_mom_rename <- dad_mom %>%
+    rename(Dad = income_dad, Mom = income_mom, Family = fam_id)
+
+dad_mom_parent_income <- dad_mom_rename %>%
+    gather(key = "Parent", value = "Income", Mom, Dad)
+
+dad_mom_dads <- dad_mom_parent_income %>%
+    gather(key = "Mom or dad", value = "Name", name_dad:name_mom) %>%
+    select(-"Mom or dad") %>%
+    arrange(Family) %>%
+    filter(Parent == "Dad" & Name == c("Paul", "Bill", "Art")) 
+
+dad_mom_moms <- dad_mom_parent_income %>%
+    gather(key = "Mom or dad", value = "Name", name_dad:name_mom) %>%
+    select(-"Mom or dad") %>%
+    arrange(Family) %>%
+    subset(Parent == "Mom" & Name == c("Amy", "Pat", "Bess"))
+
+dad_mom_tidy <- rbind(dad_mom_dads, dad_mom_moms)
+
+dad_mom_tidy <- select(dad_mom_tidy, "Family", "Name", "Parent", "Income")
+
+row.names(dad_mom_tidy) <- NULL
+
+kable(dad_mom_tidy, col.names = c("Family", "Name", "Parent", "Income"), align = "cllc")
+
+```
