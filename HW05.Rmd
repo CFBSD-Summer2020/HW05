@@ -10,6 +10,7 @@ library("tidyverse")
 library("magrittr")
 library("knitr")
 library("readr")
+library("skimr")
 ```
 
 ## 1. Tidying the dad_mom file
@@ -29,8 +30,15 @@ tidy_dad_mom<- dad_mom %>%
   pivot_longer(c(dad, mom), names_to="parent", values_to="income") %>%
   separate(income, c("name", "income"))
 
+#another way to do it learned from peer review
+tidy_data_mom2<- dad_mom %>%
+  gather(key="key", value="value", name_dad: income_mom) %>%
+  separate(key, into= c("var", "dad_or_mom"), convert=TRUE) %>%
+  spread(var, value)
+
 #print
 tidy_dad_mom
+tidy_data_mom2
 ```
 
 ## 2. Joining together CTRP data
@@ -71,17 +79,17 @@ total_AUC<- AUC %>%
 #average AUC of different cancer types
 q1<- total_AUC %>%
   select(area_under_curve, cancer_type, cpd_name) %>%
-  filter(cpd_name== "vorinostat") %>%
+  filter(cpd_name== "vorinostat", !is.na(cancer_type)) %>%
   group_by(cancer_type) %>%
-  drop_na(cancer_type) %>%
-  summarize(AUC= mean(area_under_curve))
+  summarize(AUC=mean(area_under_curve))
   
 #plot
 q1 %>%
-  ggplot(aes(x=cancer_type, y=AUC, fill=cancer_type))+
+  mutate(cancer_type= reorder(cancer_type, AUC)) %>%
+  ggplot(aes(x=cancer_type, y=AUC))+
   geom_col()+
   labs(title="Which cancer type has the lowest AUC values to the compound vorinostat", x=element_blank(), y="Average Area Under the Curve")+
-  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  theme(axis.text.x=element_text(angle=90, hjust=1))+
   theme(legend.position="none")
 ```
 
@@ -121,13 +129,16 @@ low5 %>%
 #filter the AUC according to the question
 q3<- total_AUC %>%
   select(gene_symbol_of_protein_target, area_under_curve, cpd_name, cancer_type) %>%
-  filter(gene_symbol_of_protein_target=="EGFR", cancer_type=="breast") %>%
+  filter(str_detect(gene_symbol_of_protein_target, "EGFR"), cancer_type=="breast") %>%
   group_by(cpd_name) %>%
   summarize(AUC=mean(area_under_curve)) #my filtered cpd_name has only 3 different values instead of 10?
 
 #plot
-q3 %>% ggplot(aes(x=cpd_name, y=AUC, fill= cpd_name)) +
+q3 %>% 
+  mutate(cpd_name=reorder(cpd_name, AUC)) %>%
+  ggplot(aes(x=cpd_name, y=AUC, fill= cpd_name)) +
   geom_col() +
   labs(title="AUC values of compounds that target EGFR in breast cancer", x=element_blank(), y="Average Area Under the Curve")+
+  theme(axis.text.x=element_text(angle=90, hjust=1))+
   theme(legend.position="none")
 ```
