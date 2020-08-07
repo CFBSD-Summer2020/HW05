@@ -85,8 +85,7 @@ q1<- total_AUC %>%
   
 #plot
 q1 %>%
-  mutate(cancer_type= reorder(cancer_type, AUC)) %>%
-  ggplot(aes(x=cancer_type, y=AUC))+
+  ggplot(aes(x=reorder(cancer_type, AUC), y=AUC))+
   geom_col()+
   labs(title="Which cancer type has the lowest AUC values to the compound vorinostat", x=element_blank(), y="Average Area Under the Curve")+
   theme(axis.text.x=element_text(angle=90, hjust=1))+
@@ -135,8 +134,7 @@ q3<- total_AUC %>%
 
 #plot
 q3 %>% 
-  mutate(cpd_name=reorder(cpd_name, AUC)) %>%
-  ggplot(aes(x=cpd_name, y=AUC, fill= cpd_name)) +
+  ggplot(aes(x=reorder(cpd_name, AUC), y=AUC, fill= cpd_name)) +
   geom_col() +
   labs(title="AUC values of compounds that target EGFR in breast cancer", x=element_blank(), y="Average Area Under the Curve")+
   theme(axis.text.x=element_text(angle=90, hjust=1))+
