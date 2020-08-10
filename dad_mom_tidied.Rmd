@@ -1,0 +1,45 @@
+---
+title: "dad_mon_tidied"
+author: "Yujia Liu"
+date: "8/10/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Tidying `dad_mom` dataset
+
+The task is straightforward: to make `dad_mom` table tidy. Tidy data follows certain criteria:
+
+1. Each variable must have its own column.
+2. Each observation must have its own row.
+3. Each value must have its own cell.
+
+The final dataframe would be in only 4 columns. We are converting it from wide to long.
+
+```{r libraries, warning = FALSE, message = FALSE}
+library(tidyverse)    # include dplyr, tidyr & ggplot2
+library(magrittr)    # piping
+library(knitr)    # pretty tables
+```
+
+## Load the data
+
+```{r load}
+dad_mom <- read.csv("dad_mom.txt", sep = "\t")
+kable(dad_mom)
+```
+
+## Tidy the data
+
+```{r dity}
+dad_mom %>%
+  unite("dad", c(name_dad, income_dad)) %>%
+  unite("mom", c(name_mom, income_mom)) %>%    # First combine "mom data" and "dad data"
+  pivot_longer(-fam_id, names_to = "parent", values_to = "name_income") %>%
+  #gather("parent", "name_income", -fam_id) %>%    # `gather` equivalent
+  separate(name_income, c("name", "income")) %>%
+  kable()
+```

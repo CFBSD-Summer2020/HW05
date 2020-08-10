@@ -1,0 +1,108 @@
+---
+title: "CTRP_joined"
+author: "Yujia Liu"
+date: "8/10/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Joining CTRP dataset
+
+## Introduction by Robert
+
+CTRP is a dataset I use in my research. CTRP screens cancer cells with various compounds and determines the Area Under the Dose Response Curve (AUC, a metric for how sensitive a cell line is to that compound). However, when you download the data, it comes in parts that requires a lot of id matching to be able to use reasonably easily. For example, the file that contains the AUC data doesn't tell you the cell line name or the type of cancer it is, it just gives an experiment ID number. If you wanted to know which cell line was which, you'd have to reference the experiment_info.csv file which gives you a cell line ID for each experiment, and then reference the the cancer_cell_line_file.csv to figure out what the name of that cell line actually is. 
+
+```{r library, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(magrittr)
+library(knitr)
+```
+
+## Join separated tables
+
+First, load all 5 tables:
+
+```{r load}
+auc_1 <- read.csv("CTRP_files/AUC_1.csv")
+kable(head(auc_1))
+
+auc_2 <- read.csv("CTRP_files/AUC_2.csv")
+kable(head(auc_2))
+
+cancer_cell_line <- read.csv("CTRP_files/cancer_cell_line_info.csv")
+kable(head(cancer_cell_line))
+
+compound <- read.csv("CTRP_files/compound_info.csv")
+kable(head(compound))
+
+experiment <- read.csv("CTRP_files/Experiment_info.csv")
+kable(head(experiment))
+```
+
+## Join the tables
+
+```{r join}
+ctrp_joined <- experiment %>%
+  # I didn't know more than 2 tables can be joined!
+  left_join(auc_1, auc_2, by = c("expt_id" = "experiment_id")) %>%
+  left_join(cancer_cell_line, by = "master_ccl_id") %>%
+  left_join(compound, by = "master_cpd_id") %>%
+  glimpse()
+```
+
+## Answer the following questions
+
+### Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+```{r Q1, warning = FALSE}
+ctrp_joined %>%
+  filter(cpd_name == "vorinostat") %>%
+  group_by(cancer_type) %>%
+  # We use the median, in the case of multiple observations per cancer
+  summarize(med_auc = median(area_under_curve)) %>%
+  top_n(10, desc(med_auc)) %>%    # keep top 10
+  ggplot(aes(x = reorder(cancer_type, med_auc), y = med_auc)) +
+    geom_col() +
+    labs(x = "cancer cell line names", y = "median AUC", 
+         title = "Cancer types with the lowest AUC to vorinostat") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+As is shown above, the cancer type *autonomic ganglia cancer* has the lowest AUC values to the compound "vorinostat".
+
+## Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+```{r Q2, warning = FALSE}
+ctrp_joined %>%
+  filter(ccl_name == "22RV1") %>%
+  group_by(cpd_name) %>%
+  summarize(med_auc = median(area_under_curve)) %>%
+  top_n(10, desc(med_auc)) %>%    # select top 10
+  ggplot(aes(x = reorder(cpd_name, med_auc), y = med_auc)) +
+    geom_col() +
+    labs(x = "compounds", y = "median AUC", 
+         title = "Compounds that 22RV1 most sensitive to") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+The above figure suggests that *leptomydin B* is the drug which 22RV1 most sensitive to.
+
+## For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+```{r Q3, warning = FALSE}
+ctrp_joined %>%
+  filter(cancer_type == "breast") %>%
+  filter(grepl("^EGFR;|;EGFR;|;EGFR$|^EGFR$", gene_symbol_of_protein_target)) %>%
+  group_by(cpd_name) %>%
+  summarize(mean_auc = mean(area_under_curve)) %>%
+  ggplot(aes(x = reorder(cpd_name, mean_auc), y = mean_auc)) +
+    geom_col() +
+    labs(x = "compounds", y = "average AUC",
+         title = "EGFR-targeted compounds which has the lowest AUC in breast cancer") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+Actually, *11* drugs were detected which are breast cancer cell line are sensitive to and target EGFR, but one of them seems to be a "cocktail" (erlotinib & PLX-4032). Among them *afatinib* is the one with the lowest AUC.
