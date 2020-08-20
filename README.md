@@ -1,9 +1,7 @@
 # HW05
 Due August 3rd
 
-### HW Assignment
-
-This week the goal is to practice tidying data and joining files together. Similar to last week you can practice these skills with data you already have or you can follow with the two (probably pretty short) HW assignments below.
+### Please see code [here](Code_HW05.R) or by opening the document called Code_HW05.R.
 
 ## 1. Tidying the dad_mom file
 
@@ -24,6 +22,13 @@ Then once those files are all together, you should have no problem answering the
 
 * Which cancer type has the lowest AUC values to the compound "vorinostat"?
 
+salivary gland
+
 * Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
 
+highest AUC: CI-976
+lowest AUC: leptomycin B
+
 * For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+WZ4002
