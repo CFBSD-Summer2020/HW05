@@ -1,0 +1,88 @@
+---
+title: "HW05 RW Part 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. 
+
+library (tidyverse)
+library (knitr)
+library (readr)
+
+expt_info <- read.csv ("CTRP_files/Experiment_info.csv")
+comp_info <- read.csv ("CTRP_files/compound_info.csv")
+ccl_info <- read.csv ("CTRP_files/cancer_cell_line_info.csv")
+auc1 <- read.csv ("CTRP_files/AUC_1.csv")
+auc2 <- read.csv ("CTRP_files/AUC_2.csv")
+
+auc_full <- rbind (auc1, auc2)
+
+CTRP_Data_Full <- expt_info %>%
+
+inner_join (ccl_info, by = c("master_ccl_id" = "master_ccl_id")) %>%
+
+inner_join (auc_full, by = c("expt_id" = "experiment_id")) %>%
+
+inner_join (comp_info, by = c("master_cpd_id" = "master_cpd_id"))
+
+head(CTRP_Data_Full)
+
+
+##QUESTIONS
+
+#Which cancer type has the lowest AUC values to the compound "vorinostat"?
+
+vorinostat <- CTRP_Data_Full %>%
+select (area_under_curve, cancer_type, cpd_name) %>%
+filter(cpd_name == "vorinostat")
+
+ggplot(vorinostat, aes( x = cancer_type, y = area_under_curve)) +
+geom_boxplot()
+
+
+#ANSWER: autonomic ganglia?
+
+
+#Which compound is the prostate cancer cell line 22RV1 most sensitive to? (For 22RV1, which compound has the lowest AUC value?)
+
+22RV1 <- CTRP_Data_Full %>%
+select (cpd_name, area_under_curve, ccl_name) %>%
+filter(ccl_name == "22RV1") %>%
+arrange(area_under_curve)
+
+#I'm getting an error from just this code above, not sure what's wrong?
+
+#For the 10 compounds that target EGFR, which of them has (on average) the lowest AUC values in the breast cancer cell lines?
+
+EGFR <- CTRP_Data_Full %>%
+select( cpd_name, area_under_curve, gene_symbol_of_protein_target, cancer_type) %>%
+filter (gene_symbol_of_protein_target == "EGFR") %>%
+filter (cancer_type == "breast") %>%
+
+ggplot(EGFR, aes(x = cpd_name, y = area_under_curve))
+
+#I'm confused as to how to incorporate the average AUC here?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

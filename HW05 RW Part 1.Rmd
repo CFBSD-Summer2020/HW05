@@ -1,0 +1,32 @@
+---
+title: "Raven Watson HW05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+
+library(tidyverse)
+library(knitr)
+
+untidy_data <- read.delim("dad_mom.txt")
+
+
+tidy_data <- untidy_data %>%
+unite ("mom", name_mom, income_mom) %>%
+unite ("dad", name_dad, income_dad) %>%
+
+gather(key = "Parent", value = "Name", -fam_id) %>%
+
+separate (col = Name, into = c('Name', 'Income'))
+
+kable(tidy_data)
+
+
+
